@@ -122,7 +122,6 @@ export const clientApi = {
   update: (id, clientData) => apiClient.put(`/clients/${id}`, clientData),
   delete: (id) => apiClient.delete(`/clients/${id}`),
   search: (query) => apiClient.get(`/clients/search?query=${query}`),
-  getPoints: (id) => apiClient.get(`/clients/${id}/points`),
   getSales: (id) => apiClient.get(`/clients/${id}/sales`),
 };
 
