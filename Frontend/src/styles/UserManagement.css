@@ -1,0 +1,53 @@
+/* Estilos específicos para UserManagement.jsx */
+
+/* Animaciones para los elementos de la tabla */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.user-row {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.user-row:nth-child(1) { animation-delay: 0.05s; }
+.user-row:nth-child(2) { animation-delay: 0.1s; }
+.user-row:nth-child(3) { animation-delay: 0.15s; }
+.user-row:nth-child(4) { animation-delay: 0.2s; }
+.user-row:nth-child(5) { animation-delay: 0.25s; }
+.user-row:nth-child(6) { animation-delay: 0.3s; }
+.user-row:nth-child(7) { animation-delay: 0.35s; }
+.user-row:nth-child(8) { animation-delay: 0.4s; }
+.user-row:nth-child(9) { animation-delay: 0.45s; }
+.user-row:nth-child(10) { animation-delay: 0.5s; }
+
+/* Animación para el modo de edición */
+@keyframes pulseHighlight {
+  0% { box-shadow: 0 0 0 0 rgba(217, 70, 239, 0.2); }
+  70% { box-shadow: 0 0 0 10px rgba(217, 70, 239, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(217, 70, 239, 0); }
+}
+
+.edit-mode-active {
+  animation: pulseHighlight 2s infinite;
+}
+
+/* Efecto hover para botones */
+.btn-hover-effect {
+  transition: all 0.3s ease;
+}
+
+.btn-hover-effect:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Animación para notificaciones de cambios */
+@keyframes highlightSuccess {
+  0% { background-color: rgba(167, 243, 208, 0.5); }
+  100% { background-color: transparent; }
+}
+
+.highlight-success {
+  animation: highlightSuccess 2s ease-out forwards;
+}

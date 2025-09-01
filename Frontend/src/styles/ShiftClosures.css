@@ -1,0 +1,197 @@
+/* Estilos para la página de ShiftClosures */
+
+/* Animaciones de entrada */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Animación para filas de tabla */
+@keyframes tableRowIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+tr:nth-child(odd) {
+  animation: slideInLeft 0.3s ease-out backwards;
+}
+
+tr:nth-child(even) {
+  animation: slideInRight 0.3s ease-out backwards;
+}
+
+tr:nth-child(1) { animation-delay: 0.05s; }
+tr:nth-child(2) { animation-delay: 0.1s; }
+tr:nth-child(3) { animation-delay: 0.15s; }
+tr:nth-child(4) { animation-delay: 0.2s; }
+tr:nth-child(5) { animation-delay: 0.25s; }
+tr:nth-child(6) { animation-delay: 0.3s; }
+tr:nth-child(7) { animation-delay: 0.35s; }
+tr:nth-child(8) { animation-delay: 0.4s; }
+
+/* Animaciones para efectos de brillo */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 5px rgba(217, 70, 239, 0.2); }
+  50% { box-shadow: 0 0 15px rgba(217, 70, 239, 0.6); }
+}
+
+.glow-effect {
+  animation: glowPulse 2s infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-shift {
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* Estilo para hover en botones */
+.btn-hover-effect {
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-hover-effect:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 12px -2px rgba(139, 92, 246, 0.3), 0 2px 6px -1px rgba(139, 92, 246, 0.15);
+}
+
+.btn-hover-effect:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Efecto de rotación para icono de recarga */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-on-hover:hover svg {
+  animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+/* Estilo de tarjeta neomórfica */
+.neomorphic-card {
+  border-radius: 1rem;
+  background: white;
+  box-shadow: 
+    0.5rem 0.5rem 1rem rgba(0, 0, 0, 0.1),
+    -0.5rem -0.5rem 1rem rgba(255, 255, 255, 0.5),
+    inset 0 0 0 transparent,
+    inset 0 0 0 transparent;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.neomorphic-card:hover {
+  box-shadow: 
+    0.3rem 0.3rem 0.6rem rgba(0, 0, 0, 0.1),
+    -0.3rem -0.3rem 0.6rem rgba(255, 255, 255, 0.5),
+    inset 0.2rem 0.2rem 0.5rem rgba(0, 0, 0, 0.05),
+    inset -0.2rem -0.2rem 0.5rem rgba(255, 255, 255, 0.3);
+}
+
+/* Animación para inputs en foco */
+input:focus, textarea:focus, select:focus {
+  animation: focusPulse 1s ease;
+}
+
+@keyframes focusPulse {
+  0% { box-shadow: 0 0 0 0 rgba(217, 70, 239, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(217, 70, 239, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(217, 70, 239, 0); }
+}
+
+/* Efecto flotante para tarjetas */
+.float-effect {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+/* Animación para íconos */
+.icon-pop {
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+.icon-pop:hover {
+  transform: scale(1.2);
+}
+
+/* Efecto de shimmer para carga */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-effect {
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.6) 50%, 
+    rgba(255, 255, 255, 0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Estilos para tarjetas de resumen */
+.summary-card {
+  transition: all 0.3s ease;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.summary-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Efectos para botones de acción en tablas */
+.action-button {
+  transition: all 0.2s ease;
+}
+
+.action-button:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+/* Animación para números en contador */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.count-animate {
+  animation: countUp 0.5s ease-out forwards;
+}
