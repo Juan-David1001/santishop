@@ -7,11 +7,29 @@ const { sendLowStockAlert } = require('../services/emailService');
  */
 const getCategories = async (req, res) => {
   try {
+    // Primero obtener las categorías
     const categories = await prisma.category.findMany({
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
+      include: {
+        _count: {
+          select: {
+            products: true
+          }
+        }
+      }
     });
     
-    res.json(categories);
+    // Transformar el resultado para incluir productsCount de manera explícita
+    const categoriesWithCounts = categories.map(category => ({
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
+      productsCount: category._count.products
+    }));
+    
+    res.json(categoriesWithCounts);
   } catch (error) {
     handleError(error, res);
   }
