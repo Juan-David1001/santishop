@@ -27,11 +27,14 @@ exports.getAllPurchases = async (req, res) => {
     // Filtro de fechas
     if (startDate || endDate) {
       filters.purchaseDate = {};
-      if (startDate) filters.purchaseDate.gte = new Date(startDate);
+      if (startDate) {
+        const startDateObj = new Date(startDate);
+        startDateObj.setHours(0, 0, 0, 0); // Inicio del día
+        filters.purchaseDate.gte = startDateObj;
+      }
       if (endDate) {
         const endDateObj = new Date(endDate);
-        // Ajustar la fecha final al final del día
-        endDateObj.setHours(23, 59, 59, 999);
+        endDateObj.setHours(23, 59, 59, 999); // Final del día
         filters.purchaseDate.lte = endDateObj;
       }
     }
@@ -397,11 +400,14 @@ exports.getPurchaseReport = async (req, res) => {
     // Filtro de fechas
     if (startDate || endDate) {
       filters.purchaseDate = {};
-      if (startDate) filters.purchaseDate.gte = new Date(startDate);
+      if (startDate) {
+        const startDateObj = new Date(startDate);
+        startDateObj.setHours(0, 0, 0, 0); // Inicio del día
+        filters.purchaseDate.gte = startDateObj;
+      }
       if (endDate) {
         const endDateObj = new Date(endDate);
-        // Ajustar la fecha final al final del día
-        endDateObj.setHours(23, 59, 59, 999);
+        endDateObj.setHours(23, 59, 59, 999); // Final del día
         filters.purchaseDate.lte = endDateObj;
       }
     }

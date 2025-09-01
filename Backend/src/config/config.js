@@ -9,6 +9,5 @@ module.exports = {
       user: process.env.EMAIL_USER || 'tienda.br165@gmail.com',
       pass: process.env.EMAIL_PASS || 'mior vlmj ehae wlxy'
     }
-  },
-  timezone: 'America/Bogota'
+  }
 };

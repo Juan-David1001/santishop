@@ -90,17 +90,17 @@ const getSales = async (req, res) => {
     // Construir condiciones de filtro
     const where = {};
     
-    // Filtros de fecha - Ajustando para la zona horaria de Colombia (UTC-5)
+    // Filtros de fecha
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) {
         const start = new Date(startDate);
-        start.setUTCHours(5, 0, 0, 0); // 5 horas después de UTC medianoche = 00:00 Colombia
+        start.setHours(0, 0, 0, 0); // Inicio del día
         where.createdAt.gte = start;
       }
       if (endDate) {
         const end = new Date(endDate);
-        end.setUTCHours(29, 59, 59, 999); // 29 = 24 + 5, final del día ajustado a Colombia
+        end.setHours(23, 59, 59, 999); // Final del día
         where.createdAt.lte = end;
       }
     }

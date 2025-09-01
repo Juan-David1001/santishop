@@ -4,9 +4,6 @@ const path = require('path');
 const { errorHandler } = require('./middleware/validationMiddleware');
 const config = require('./config/config');
 
-// Configuración de la zona horaria para Colombia (UTC-5)
-process.env.TZ = config.timezone;
-
 // Importar rutas
 const productRoutes = require('./routes/productRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
