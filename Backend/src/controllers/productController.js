@@ -10,6 +10,7 @@ const getProducts = async (req, res) => {
     const { 
       sku,
       name,
+      search, // Nuevo parámetro unificado para búsqueda
       categoryId,
       minStock,
       maxStock,
@@ -25,12 +26,21 @@ const getProducts = async (req, res) => {
     // Construir condiciones de filtro
     const where = {};
     
-    if (sku) {
-      where.sku = { contains: sku };
-    }
-    
-    if (name) {
-      where.name = { contains: name };
+    // Búsqueda unificada por nombre o SKU
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { sku: { contains: search } }
+      ];
+    } else {
+      // Mantener compatibilidad con búsquedas individuales
+      if (sku) {
+        where.sku = { contains: sku };
+      }
+      
+      if (name) {
+        where.name = { contains: name };
+      }
     }
     
     if (categoryId) {

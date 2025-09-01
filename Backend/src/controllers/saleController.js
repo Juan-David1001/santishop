@@ -143,6 +143,7 @@ const getSales = async (req, res) => {
       include: {
         user: true,
         shift: true,
+        payments: true,
         saleItems: {
           include: {
             product: true

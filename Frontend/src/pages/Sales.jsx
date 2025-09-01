@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react'
 import apiClient from '../utils/apiClient'
 import toast from 'react-hot-toast'
+import { formatCurrency } from '../utils/formatters'
+import { 
+  FaSearch, FaShoppingCart, FaUser, FaPlus, FaTimes, 
+  FaTrash, FaMoneyBillWave, FaCreditCard, FaExchangeAlt, 
+  FaPrint, FaCalendarAlt, FaSort, FaFilter, FaEdit,
+  FaChartLine, FaRegClock
+} from 'react-icons/fa'
+import { MdPointOfSale, MdDiscount, MdPayment, MdReceiptLong, MdHistory, MdFilterList } from 'react-icons/md'
 
 function Sales() {
   const [sales, setSales] = useState([])
@@ -126,6 +134,12 @@ function Sales() {
       // Actualizar estado con los datos recibidos
       if (response.data.sales) {
         // Nuevo formato de respuesta con ventas, totales y paginación
+        console.log('Ventas recibidas:', response.data.sales)
+        
+        // Verificar si las ventas incluyen los datos de pagos
+        const hasPayments = response.data.sales.some(sale => sale.payments && sale.payments.length > 0)
+        console.log('¿Las ventas incluyen pagos?', hasPayments)
+        
         setSales(response.data.sales)
         setTotals(response.data.totals)
         
@@ -301,66 +315,80 @@ function Sales() {
 
   // Función para obtener la clase de la pestaña activa/inactiva
   const getTabClass = (tabName) => {
-    const baseClass = "flex-1 py-3 px-4 text-center font-medium"
+    const baseClass = "flex-1 py-4 px-6 text-center font-medium transition-all duration-200"
     if (activeTab === tabName) {
-      return `${baseClass} bg-blue-600 text-white`
+      return `${baseClass} bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white shadow-md rounded-t-xl transform -translate-y-1`
     }
-    return `${baseClass} bg-gray-100 text-gray-600 hover:bg-gray-200`
+    return `${baseClass} bg-white text-slate-600 hover:bg-violet-50 hover:text-violet-700 hover:shadow-sm`
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-3">Gestión de Ventas</h1>
+    <div className="h-full flex flex-col bg-slate-50 animate-fadeIn">
+      <div className="flex items-center gap-3 mb-6 bg-white p-4 rounded-xl shadow-md border-l-4 border-fuchsia-500 hover:shadow-lg transition-all duration-300">
+        <div className="bg-gradient-to-r from-violet-500 to-fuchsia-600 p-2 rounded-lg shadow-inner">
+          <MdPointOfSale size={32} className="text-white" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Gestión de Ventas</h1>
+          <p className="text-sm text-slate-500">Administre ventas y consulte historial de transacciones</p>
+        </div>
+      </div>
       
       {error && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded mb-6 shadow-sm">
-          <div className="flex items-center">
-            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p>{error}</p>
-          </div>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center">
+          <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p>{error}</p>
         </div>
       )}
 
       {/* Pestañas para cambiar entre registro e historial */}
-      <div className="flex rounded-t-lg overflow-hidden mb-0 shadow-sm">
+      <div className="flex rounded-t-xl overflow-hidden mb-0 shadow-sm gap-1 bg-slate-100 p-1">
         <button 
           onClick={() => setActiveTab('register')}
-          className={getTabClass('register')}
+          className={`${getTabClass('register')} flex items-center justify-center gap-2`}
         >
-          <svg className="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
+          <div className={`${activeTab === 'register' ? 'bg-white/20' : 'bg-indigo-100'} p-1.5 rounded-lg mr-1.5`}>
+            <MdPayment size={18} className={activeTab === 'register' ? 'text-white' : 'text-indigo-600'} />
+          </div>
           Registrar Venta
         </button>
         <button 
           onClick={() => setActiveTab('history')}
-          className={getTabClass('history')}
+          className={`${getTabClass('history')} flex items-center justify-center gap-2`}
         >
-          <svg className="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
+          <div className={`${activeTab === 'history' ? 'bg-white/20' : 'bg-indigo-100'} p-1.5 rounded-lg mr-1.5`}>
+            <MdHistory size={18} className={activeTab === 'history' ? 'text-white' : 'text-indigo-600'} />
+          </div>
           Historial de Ventas
         </button>
       </div>
 
       {/* Panel de registro de ventas */}
       {activeTab === 'register' && (
-        <div className="bg-white rounded-b-lg rounded-tr-lg shadow-md overflow-hidden mb-8 hover:shadow-lg transition-shadow">
-          <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700">
-            <h3 className="text-lg font-medium text-white">
+        <div className="bg-white rounded-b-xl rounded-tr-xl shadow-lg overflow-hidden mb-8 hover:shadow-xl transition-all duration-300">
+          <div className="px-6 py-5 bg-gradient-to-r from-violet-500 to-fuchsia-600 flex items-center">
+            <div className="p-2.5 rounded-lg bg-white/20 mr-3 shadow-inner">
+              <MdPayment className="text-white" size={20} />
+            </div>
+            <h3 className="text-lg font-semibold text-white">
               {editingSale ? 'Editar Venta' : 'Nueva Venta'}
             </h3>
           </div>
           <div className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div className="md:col-span-1">
-                  <label htmlFor="amount" className="block mb-2 font-medium text-gray-700">Monto</label>
+                  <label htmlFor="amount" className="block mb-2 font-medium text-slate-700 flex items-center">
+                    <div className="bg-gradient-to-r from-violet-100 to-fuchsia-100 p-1.5 rounded-lg shadow-inner mr-2">
+                      <FaMoneyBillWave className="text-fuchsia-600" size={14} />
+                    </div>
+                    Monto
+                  </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <span className="text-gray-500">$</span>
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                      <span className="text-indigo-600 font-medium">$</span>
                     </div>
                     <input
                       type="number"
@@ -368,42 +396,55 @@ function Sales() {
                       placeholder="0.00"
                       value={newSale.amount}
                       onChange={(e) => setNewSale({ ...newSale, amount: e.target.value })}
-                      className="w-full pl-8 px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full pl-9 px-4 py-3.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-fuchsia-500 bg-white shadow-md hover:shadow-lg transition-all"
                       required
                     />
                   </div>
                 </div>
+                
                 <div className="md:col-span-1">
-                  <label htmlFor="paymentMethod" className="block mb-2 font-medium text-gray-700">Método de Pago</label>
+                  <label htmlFor="paymentMethod" className="block mb-2 font-medium text-slate-700 flex items-center">
+                    <div className="bg-gradient-to-r from-violet-100 to-fuchsia-100 p-1.5 rounded-lg shadow-inner mr-2">
+                      <FaCreditCard className="text-fuchsia-600" size={14} />
+                    </div>
+                    Método de Pago
+                  </label>
                   <div className="relative">
                     <select
                       id="paymentMethod"
                       value={newSale.paymentMethod}
                       onChange={(e) => setNewSale({ ...newSale, paymentMethod: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                      className="w-full px-4 py-3.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-md hover:shadow-lg transition-shadow appearance-none"
                       required
                     >
                       <option value="efectivo">Efectivo</option>
                       <option value="transferencia">Transferencia</option>
                     </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                      <div className="bg-gradient-to-r from-violet-100 to-fuchsia-100 p-1 rounded-lg">
+                        <svg className="w-4 h-4 text-fuchsia-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </div>
                 
                 {activeShifts.length > 0 && (
                   <div className="md:col-span-1">
-                    <label htmlFor="shiftInfo" className="block mb-2 font-medium text-gray-700">Turno</label>
+                    <label htmlFor="shiftInfo" className="block mb-2 font-medium text-slate-700 flex items-center">
+                      <div className="bg-gradient-to-r from-violet-100 to-fuchsia-100 p-1.5 rounded-lg shadow-inner mr-2">
+                        <FaRegClock className="text-fuchsia-600" size={14} />
+                      </div>
+                      Turno
+                    </label>
                     <div className="relative">
                       {activeShifts.length === 1 ? (
                         // Si solo hay un turno activo, mostrar info del turno en lugar del selector
-                        <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-blue-50 flex items-center">
+                        <div className="w-full px-4 py-3.5 border border-emerald-200 rounded-xl bg-gradient-to-r from-emerald-50 to-indigo-50 flex items-center shadow-md">
                           <div className="flex items-center">
-                            <span className="h-2 w-2 bg-green-500 rounded-full mr-2"></span>
-                            <span>
+                            <span className="h-3 w-3 bg-emerald-500 rounded-full mr-2 animate-pulse shadow-sm"></span>
+                            <span className="text-indigo-800 font-medium">
                               {activeShifts[0].user ? 
                                 `${activeShifts[0].user.name} (Turno #${activeShifts[0].id})` : 
                                 `Turno #${activeShifts[0].id}`}
@@ -418,7 +459,7 @@ function Sales() {
                             id="shiftSelect"
                             value={selectedShift}
                             onChange={(e) => setSelectedShift(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                            className="w-full px-4 py-3.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-md hover:shadow-lg transition-shadow appearance-none"
                             required
                           >
                             <option value="" disabled>Seleccionar turno</option>
@@ -428,10 +469,12 @@ function Sales() {
                               </option>
                             ))}
                           </select>
-                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                            <div className="bg-indigo-100 p-1 rounded-lg">
+                              <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
                           </div>
                         </>
                       )}
@@ -441,55 +484,66 @@ function Sales() {
                 
                 {activeShifts.length === 0 && (
                   <div className="md:col-span-1">
+                    <label className="block mb-2 font-medium text-slate-700 flex items-center">
+                      <div className="bg-indigo-100 p-1.5 rounded-lg shadow-inner mr-2">
+                        <FaRegClock className="text-indigo-600" size={14} />
+                      </div>
+                      Estado
+                    </label>
                     <div className="flex h-full items-center">
-                      <div className="w-full px-4 py-3 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-300">
+                      <div className="w-full px-4 py-3.5 bg-gradient-to-r from-amber-50 to-amber-100 text-amber-800 rounded-xl border border-amber-200 shadow-md">
                         <div className="flex items-center">
-                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
+                          <div className="p-1.5 bg-amber-200 rounded-lg mr-2 shadow-inner">
+                            <svg className="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                          </div>
                           <span className="text-sm font-medium">No hay turnos activos</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
-                <div className="flex items-end space-x-2">
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                  >
-                    <span className="flex items-center justify-center">
-                      {!editingSale ? (
-                        <>
-                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                          Agregar
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                          </svg>
-                          Actualizar
-                        </>
-                      )}
-                    </span>
-                  </button>
-                  {editingSale && (
+
+                <div className="md:col-span-3 pt-6">
+                  <div className="flex items-end space-x-4">
                     <button
-                      type="button"
-                      onClick={cancelEdit}
-                      className="flex-1 px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
+                      type="submit"
+                      className="flex-1 px-5 py-4 bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white rounded-xl shadow-lg hover:shadow-xl hover:from-violet-600 hover:to-fuchsia-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transform hover:-translate-y-0.5 transition-all"
                     >
                       <span className="flex items-center justify-center">
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Cancelar
+                        {!editingSale ? (
+                          <>
+                            <div className="bg-white/20 p-1.5 rounded-lg shadow-inner mr-2">
+                              <FaPlus size={14} className="text-white" />
+                            </div>
+                            <span className="font-semibold">Registrar Venta</span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="bg-white/20 p-1.5 rounded-lg shadow-inner mr-2">
+                              <FaEdit size={14} className="text-white" />
+                            </div>
+                            <span className="font-semibold">Actualizar Venta</span>
+                          </>
+                        )}
                       </span>
                     </button>
-                  )}
+                    {editingSale && (
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="flex-1 px-5 py-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-xl shadow-lg hover:shadow-xl hover:from-slate-700 hover:to-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transform hover:-translate-y-0.5 transition-all"
+                      >
+                        <span className="flex items-center justify-center">
+                          <div className="bg-white/20 p-1.5 rounded-lg shadow-inner mr-2">
+                            <FaTimes size={14} className="text-white" />
+                          </div>
+                          <span className="font-semibold">Cancelar Edición</span>
+                        </span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </form>
@@ -499,128 +553,196 @@ function Sales() {
 
       {/* Panel de historial y búsqueda */}
       {activeTab === 'history' && (
-        <div className="bg-white rounded-b-lg rounded-tl-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-          <div className="px-6 py-4 bg-gradient-to-r from-gray-700 to-gray-800 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-white">Historial de Ventas</h3>
-            <span className="bg-blue-500 text-xs font-semibold text-white px-3 py-1 rounded-full">
+        <div className="bg-white rounded-b-xl rounded-tl-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
+          <div className="px-6 py-5 bg-gradient-to-r from-violet-700 to-fuchsia-800 flex justify-between items-center">
+            <div className="flex items-center">
+              <div className="p-2.5 rounded-lg bg-white/20 mr-3 shadow-inner">
+                <MdReceiptLong className="text-white" size={20} />
+              </div>
+              <h3 className="text-lg font-semibold text-white">Historial de Ventas</h3>
+            </div>
+            <span className="bg-gradient-to-r from-pink-400 to-fuchsia-500 text-xs font-semibold text-white px-4 py-1.5 rounded-full shadow-inner">
               {sales.length} {sales.length === 1 ? 'Venta' : 'Ventas'}
             </span>
           </div>
           
           {/* Resumen de totales */}
-          <div className="bg-blue-50 px-6 py-3">
-            <div className="flex flex-wrap justify-between items-center gap-2">
-              <div className="flex items-center">
-                <span className="text-sm text-gray-600 mr-2">Total:</span>
-                <span className="text-lg font-semibold text-blue-700">{formatCurrency(totals.total)}</span>
+          <div className="bg-gradient-to-r from-slate-100 to-violet-50 px-6 py-6 border-b border-slate-200 shadow-md">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="p-4 bg-white rounded-xl shadow-md border border-slate-200 flex items-center justify-between hover:shadow-lg transition-all transform hover:-translate-y-1">
+                <div className="flex items-center">
+                  <div className="p-3 bg-gradient-to-br from-violet-100 to-fuchsia-200 rounded-xl mr-4 shadow-inner">
+                    <FaChartLine className="text-fuchsia-600" size={18} />
+                  </div>
+                  <span className="text-base font-semibold text-slate-700">Total:</span>
+                </div>
+                <span className="text-lg font-bold text-fuchsia-700 bg-gradient-to-r from-fuchsia-50 to-white px-4 py-2 rounded-xl border border-fuchsia-200 shadow">
+                  {formatCurrency(totals.total)}
+                </span>
               </div>
               
-              <div className="flex space-x-4">
+              <div className="p-4 bg-white rounded-xl shadow-md border border-slate-200 flex items-center justify-between hover:shadow-lg transition-all transform hover:-translate-y-1">
                 <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                  <span className="text-sm text-gray-600 mr-2">Efectivo:</span>
-                  <span className="font-medium text-green-700">{formatCurrency(totals.byPaymentMethod.efectivo)}</span>
+                  <div className="p-3 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl mr-4 shadow-inner">
+                    <FaMoneyBillWave className="text-emerald-600" size={18} />
+                  </div>
+                  <span className="text-base font-semibold text-slate-700">Efectivo:</span>
                 </div>
-                
+                <span className="text-lg font-bold text-emerald-700 bg-gradient-to-r from-emerald-50 to-white px-4 py-2 rounded-xl border border-emerald-200 shadow">
+                  {formatCurrency(totals.byPaymentMethod.efectivo)}
+                </span>
+              </div>
+              
+              <div className="p-4 bg-white rounded-xl shadow-md border border-slate-200 flex items-center justify-between hover:shadow-lg transition-all transform hover:-translate-y-1">
                 <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-                  <span className="text-sm text-gray-600 mr-2">Transferencia:</span>
-                  <span className="font-medium text-blue-700">{formatCurrency(totals.byPaymentMethod.transferencia)}</span>
+                  <div className="p-3 bg-gradient-to-br from-violet-100 to-violet-200 rounded-xl mr-4 shadow-inner">
+                    <FaExchangeAlt className="text-violet-600" size={18} />
+                  </div>
+                  <span className="text-base font-semibold text-slate-700">Transferencia:</span>
                 </div>
+                <span className="text-lg font-bold text-violet-700 bg-gradient-to-r from-violet-50 to-white px-4 py-2 rounded-xl border border-violet-200 shadow">
+                  {formatCurrency(totals.byPaymentMethod.transferencia)}
+                </span>
               </div>
             </div>
           </div>
           
           {/* Filtros de búsqueda */}
-          <div className="border-b border-gray-200 p-4 bg-gray-50">
-            <div className="mb-2 flex justify-between items-center">
-              <h4 className="text-sm font-semibold text-gray-700">Filtros de búsqueda</h4>
+          <div className="border-b border-slate-200 p-6 bg-white">
+            <div className="mb-5 flex justify-between items-center">
+              <div className="flex items-center">
+                <div className="p-3 bg-gradient-to-r from-violet-100 to-fuchsia-100 text-fuchsia-600 rounded-xl mr-3 shadow-inner">
+                  <MdFilterList size={20} />
+                </div>
+                <h4 className="font-semibold text-slate-800 text-lg">Filtros de búsqueda</h4>
+              </div>
               <button 
                 onClick={resetFilters}
-                className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                className="text-sm text-fuchsia-600 hover:text-fuchsia-800 flex items-center px-4 py-2 hover:bg-fuchsia-50 rounded-lg transition-all shadow hover:shadow-md border border-fuchsia-100"
               >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Reiniciar filtros
               </button>
             </div>
             
-            <form onSubmit={applyFilters} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="startDate" className="block mb-1 text-xs font-medium text-gray-700">Fecha desde</label>
+            <form onSubmit={applyFilters} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+                <label htmlFor="startDate" className="block mb-3 text-sm font-medium text-slate-700 flex items-center">
+                  <div className="p-1.5 bg-gradient-to-r from-violet-100 to-fuchsia-100 text-fuchsia-600 rounded-lg mr-2 shadow-inner">
+                    <FaCalendarAlt size={14} />
+                  </div>
+                  Fecha desde
+                </label>
                 <input
                   type="date"
                   id="startDate"
                   name="startDate"
                   value={filters.startDate}
                   onChange={handleFilterChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-md"
                 />
               </div>
               
-              <div>
-                <label htmlFor="endDate" className="block mb-1 text-xs font-medium text-gray-700">Fecha hasta</label>
+              <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+                <label htmlFor="endDate" className="block mb-3 text-sm font-medium text-slate-700 flex items-center">
+                  <div className="p-1.5 bg-gradient-to-r from-violet-100 to-fuchsia-100 text-fuchsia-600 rounded-lg mr-2 shadow-inner">
+                    <FaCalendarAlt size={14} />
+                  </div>
+                  Fecha hasta
+                </label>
                 <input
                   type="date"
                   id="endDate"
                   name="endDate"
                   value={filters.endDate}
                   onChange={handleFilterChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-md"
                 />
               </div>
               
-              <div>
-                <label htmlFor="minAmount" className="block mb-1 text-xs font-medium text-gray-700">Monto mínimo</label>
-                <input
-                  type="number"
-                  id="minAmount"
-                  name="minAmount"
-                  placeholder="Mínimo"
-                  value={filters.minAmount}
-                  onChange={handleFilterChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
+              <div className="p-4 bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                <label htmlFor="paymentMethodFilter" className="block mb-3 text-sm font-medium text-slate-700 flex items-center">
+                  <div className="p-1.5 bg-gradient-to-r from-violet-100 to-fuchsia-100 text-fuchsia-600 rounded-lg mr-2 shadow-inner">
+                    <FaCreditCard size={14} />
+                  </div>
+                  Método de pago
+                </label>
+                <div className="relative">
+                  <select
+                    id="paymentMethodFilter"
+                    name="paymentMethod"
+                    value={filters.paymentMethod}
+                    onChange={handleFilterChange}
+                    className="w-full px-4 py-3 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white shadow-md appearance-none"
+                  >
+                    <option value="">Todos</option>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="transferencia">Transferencia</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
               
-              <div>
-                <label htmlFor="maxAmount" className="block mb-1 text-xs font-medium text-gray-700">Monto máximo</label>
-                <input
-                  type="number"
-                  id="maxAmount"
-                  name="maxAmount"
-                  placeholder="Máximo"
-                  value={filters.maxAmount}
-                  onChange={handleFilterChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
+              <div className="p-4 bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                <label htmlFor="minAmount" className="block mb-2 text-sm font-medium text-slate-700 flex items-center">
+                  <FaMoneyBillWave className="mr-2 text-indigo-500" size={14} />
+                  Monto mínimo
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <span className="text-slate-500">$</span>
+                  </div>
+                  <input
+                    type="number"
+                    id="minAmount"
+                    name="minAmount"
+                    placeholder="0"
+                    value={filters.minAmount}
+                    onChange={handleFilterChange}
+                    className="w-full pl-8 px-4 py-2.5 text-sm border border-slate-300 rounded-lg focus-ring bg-white shadow-sm"
+                  />
+                </div>
               </div>
               
-              <div>
-                <label htmlFor="paymentMethodFilter" className="block mb-1 text-xs font-medium text-gray-700">Método de pago</label>
-                <select
-                  id="paymentMethodFilter"
-                  name="paymentMethod"
-                  value={filters.paymentMethod}
-                  onChange={handleFilterChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Todos</option>
-                  <option value="efectivo">Efectivo</option>
-                  <option value="transferencia">Transferencia</option>
-                </select>
+              <div className="p-4 bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                <label htmlFor="maxAmount" className="block mb-2 text-sm font-medium text-slate-700 flex items-center">
+                  <FaMoneyBillWave className="mr-2 text-indigo-500" size={14} />
+                  Monto máximo
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <span className="text-slate-500">$</span>
+                  </div>
+                  <input
+                    type="number"
+                    id="maxAmount"
+                    name="maxAmount"
+                    placeholder="0"
+                    value={filters.maxAmount}
+                    onChange={handleFilterChange}
+                    className="w-full pl-8 px-4 py-2.5 text-sm border border-slate-300 rounded-lg focus-ring bg-white shadow-sm"
+                  />
+                </div>
               </div>
               
-              <div>
-                <label htmlFor="sortBy" className="block mb-1 text-xs font-medium text-gray-700">Ordenar por</label>
+              <div className="p-4 bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                <label htmlFor="sortBy" className="block mb-2 text-sm font-medium text-slate-700 flex items-center">
+                  <FaSort className="mr-2 text-indigo-500" size={14} />
+                  Ordenar por
+                </label>
                 <div className="flex space-x-2">
                   <select
                     id="sortBy"
                     name="sortBy"
                     value={filters.sortBy}
                     onChange={handleFilterChange}
-                    className="w-2/3 px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="w-2/3 px-4 py-2.5 text-sm border border-slate-300 rounded-lg focus-ring bg-white shadow-sm appearance-none"
                   >
                     <option value="createdAt">Fecha</option>
                     <option value="amount">Monto</option>
@@ -630,7 +752,7 @@ function Sales() {
                     name="sortOrder"
                     value={filters.sortOrder}
                     onChange={handleFilterChange}
-                    className="w-1/3 px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="w-1/3 px-4 py-2.5 text-sm border border-slate-300 rounded-lg focus-ring bg-white shadow-sm appearance-none"
                   >
                     <option value="desc">↓ DESC</option>
                     <option value="asc">↑ ASC</option>
@@ -638,22 +760,22 @@ function Sales() {
                 </div>
               </div>
               
-              <div className="lg:col-span-3 flex justify-end">
+              <div className="lg:col-span-3 flex justify-end mt-5">
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center"
+                  className="px-6 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white rounded-xl shadow-lg hover:shadow-xl hover:from-violet-600 hover:to-fuchsia-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transform hover:-translate-y-0.5 transition-all flex items-center"
                 >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                  </svg>
-                  Aplicar Filtros
+                  <div className="bg-white/20 p-1.5 rounded-lg shadow-inner mr-2">
+                    <FaFilter size={14} className="text-white" />
+                  </div>
+                  <span className="font-semibold">Aplicar Filtros</span>
                 </button>
               </div>
             </form>
             
             {isFiltering && (
-              <div className="mt-2 p-2 bg-blue-50 rounded-md text-xs text-blue-800 flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div className="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100 text-sm text-indigo-700 flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 {(filters.startDate || filters.endDate) ? 
@@ -683,53 +805,74 @@ function Sales() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white">
+                  <div className="overflow-x-auto rounded-xl">
+                    <table className="min-w-full bg-white shadow-md">
                       <thead>
-                        <tr className="bg-gray-100 border-b">
-                          <th className="text-left py-3 px-4 font-medium text-gray-600">Fecha</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-600">Método</th>
-                          <th className="text-right py-3 px-4 font-medium text-gray-600">Monto</th>
-                          <th className="text-center py-3 px-4 font-medium text-gray-600">Acciones</th>
+                        <tr className="bg-gradient-to-r from-violet-50 to-fuchsia-50 border-b border-slate-200">
+                          <th className="text-left py-4 px-5 font-semibold text-slate-700">Fecha</th>
+                          <th className="text-left py-4 px-5 font-semibold text-slate-700">Método</th>
+                          <th className="text-right py-4 px-5 font-semibold text-slate-700">Monto</th>
+                          <th className="text-center py-4 px-5 font-semibold text-slate-700">Acciones</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200">
+                      <tbody className="divide-y divide-slate-100">
                         {sales.map((sale) => (
-                          <tr key={sale.id} className="hover:bg-gray-50">
-                            <td className="py-3 px-4">
+                          <tr key={sale.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-4 px-5">
                               <div className="flex flex-col">
-                                <span>{formatDate(sale.createdAt)}</span>
+                                <span className="font-medium text-slate-700">{formatDate(sale.createdAt)}</span>
                                 {sale.shift && sale.shift.user && (
-                                  <span className="text-xs text-gray-500 mt-1">
+                                  <span className="text-xs text-slate-500 mt-1.5">
                                     {sale.shift.user.name}
                                   </span>
                                 )}
                               </div>
                             </td>
-                            <td className="py-3 px-4">
-                              {sale.paymentMethod === 'efectivo' ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  Efectivo
-                                </span>
+                            <td className="py-4 px-5">
+                              {sale.payments && sale.payments.length > 0 ? (
+                                <div className="space-y-2">
+                                  {sale.payments.map((payment, index) => (
+                                    <span key={index} className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium shadow-sm ${
+                                      payment.type === 'efectivo' ? 'bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-800 border border-emerald-200' :
+                                      payment.type === 'transferencia' ? 'bg-gradient-to-r from-violet-50 to-violet-100 text-violet-800 border border-violet-200' :
+                                      payment.type === 'tarjeta' ? 'bg-gradient-to-r from-amber-50 to-amber-100 text-amber-800 border border-amber-200' :
+                                      'bg-gradient-to-r from-slate-50 to-slate-100 text-slate-800 border border-slate-200'
+                                    }`}>
+                                      {payment.type === 'efectivo' && <FaMoneyBillWave className="mr-1.5" size={12} />}
+                                      {payment.type === 'transferencia' && <FaExchangeAlt className="mr-1.5" size={12} />}
+                                      {payment.type === 'tarjeta' && <FaCreditCard className="mr-1.5" size={12} />}
+                                      {payment.type === 'efectivo' ? 'Efectivo' :
+                                       payment.type === 'transferencia' ? 'Transferencia' :
+                                       payment.type === 'tarjeta' ? 'Tarjeta' : payment.type}
+                                      {payment.amount && <span className="ml-1 font-semibold">{formatCurrency(payment.amount)}</span>}
+                                    </span>
+                                  ))}
+                                </div>
                               ) : (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                  Transferencia
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-slate-50 to-slate-100 text-slate-600 border border-slate-200 shadow-sm">
+                                  <MdPayment className="mr-1.5" size={12} />
+                                  {sale.amount > 0 ? "Método no especificado" : "Sin pago"}
                                 </span>
                               )}
                               {sale.shift && (
-                                <div className="mt-1">
-                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                <div className="mt-2">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-violet-50 to-fuchsia-100 text-fuchsia-700 border border-fuchsia-200 shadow-sm">
+                                    <FaRegClock className="mr-1.5" size={12} />
                                     Turno #{sale.shift.id}
                                   </span>
                                 </div>
                               )}
                             </td>
-                            <td className="py-3 px-4 text-right font-medium text-blue-600">{formatCurrency(sale.amount)}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex justify-center space-x-2">
+                            <td className="py-4 px-5 text-right">
+                              <div className="inline-block font-medium text-fuchsia-600 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-1.5 rounded-lg border border-fuchsia-100 shadow-sm">
+                                {formatCurrency(sale.amount)}
+                              </div>
+                            </td>
+                            <td className="py-4 px-5">
+                              <div className="flex justify-center space-x-3">
                                 <button
                                   onClick={() => startEdit(sale)}
-                                  className="p-1.5 bg-blue-50 rounded-md text-blue-600 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                                  className="p-2 bg-gradient-to-r from-violet-50 to-violet-100 rounded-lg text-violet-600 hover:shadow-md border border-violet-200 transition-all transform hover:-translate-y-0.5"
                                   title="Editar"
                                 >
                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -738,7 +881,7 @@ function Sales() {
                                 </button>
                                 <button
                                   onClick={() => handleDelete(sale.id)}
-                                  className="p-1.5 bg-red-50 rounded-md text-red-600 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                                  className="p-2 bg-gradient-to-r from-fuchsia-50 to-pink-100 rounded-lg text-fuchsia-600 hover:shadow-md border border-fuchsia-200 transition-all transform hover:-translate-y-0.5"
                                   title="Eliminar"
                                 >
                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -754,9 +897,9 @@ function Sales() {
                     
                     {/* Componente de paginación - solo mostrar si no estamos en carga completa */}
                     {pagination.totalPages > 1 && !pagination.isFullLoad && (
-                      <div className="flex flex-col md:flex-row justify-between items-center mt-4 px-4 py-3 bg-gray-50 border-t rounded-b-lg">
-                        <div className="flex items-center text-sm text-gray-700 mb-2 md:mb-0">
-                          <span className="mr-2">Mostrando <span className="font-medium">{sales.length}</span> de <span className="font-medium">{pagination.totalItems}</span></span>
+                      <div className="flex flex-col md:flex-row justify-between items-center mt-4 px-4 py-3 bg-gradient-to-r from-violet-50 to-fuchsia-50 border-t rounded-b-lg shadow-inner">
+                        <div className="flex items-center text-sm text-slate-700 mb-2 md:mb-0">
+                          <span className="mr-2">Mostrando <span className="font-medium text-fuchsia-700">{sales.length}</span> de <span className="font-medium text-fuchsia-700">{pagination.totalItems}</span></span>
                           <div className="flex items-center">
                             <span className="mr-1">Filas por página:</span>
                             <select 
@@ -765,7 +908,7 @@ function Sales() {
                                 const newLimit = parseInt(e.target.value);
                                 fetchSales({ ...filters, page: 1, limit: newLimit });
                               }}
-                              className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="border border-violet-200 rounded-lg px-2 py-1 text-sm bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-violet-400"
                             >
                               <option value="10">10</option>
                               <option value="25">25</option>
@@ -774,12 +917,14 @@ function Sales() {
                             </select>
                           </div>
                         </div>
-                        <div className="flex space-x-1">
+                        <div className="flex space-x-2">
                           {/* Botón para primera página */}
                           <button
                             onClick={() => handlePageChange(1)}
                             disabled={pagination.page === 1}
-                            className={`px-3 py-1 rounded ${pagination.page === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                            className={`px-3 py-1 rounded-lg shadow-sm ${pagination.page === 1 
+                              ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-400 border border-slate-200 cursor-not-allowed' 
+                              : 'bg-gradient-to-r from-violet-100 to-fuchsia-200 text-fuchsia-600 border border-fuchsia-200 hover:shadow-md transform hover:-translate-y-0.5 transition-all'}`}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
@@ -790,7 +935,9 @@ function Sales() {
                           <button
                             onClick={() => handlePageChange(pagination.page - 1)}
                             disabled={pagination.page === 1}
-                            className={`px-3 py-1 rounded ${pagination.page === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                            className={`px-3 py-1 rounded-lg shadow-sm ${pagination.page === 1 
+                              ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-400 border border-slate-200 cursor-not-allowed' 
+                              : 'bg-gradient-to-r from-violet-100 to-fuchsia-200 text-fuchsia-600 border border-fuchsia-200 hover:shadow-md transform hover:-translate-y-0.5 transition-all'}`}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -810,7 +957,9 @@ function Sales() {
                                 <button
                                   key={pageNumber}
                                   onClick={() => handlePageChange(pageNumber)}
-                                  className={`px-3 py-1 rounded ${pagination.page === pageNumber ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                                  className={`px-3 py-1 rounded-lg shadow-sm ${pagination.page === pageNumber 
+                                    ? 'bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white border border-fuchsia-400' 
+                                    : 'bg-gradient-to-r from-violet-50 to-fuchsia-100 text-fuchsia-700 border border-fuchsia-200 hover:shadow-md transform hover:-translate-y-0.5 transition-all'}`}
                                 >
                                   {pageNumber}
                                 </button>
@@ -818,7 +967,7 @@ function Sales() {
                             }
                             // Mostrar puntos suspensivos si hay saltos
                             if (pageNumber === pagination.page - 2 || pageNumber === pagination.page + 2) {
-                              return <span key={pageNumber} className="px-2 py-1">...</span>
+                              return <span key={pageNumber} className="px-2 py-1 text-fuchsia-500">...</span>
                             }
                             return null;
                           })}
@@ -827,7 +976,9 @@ function Sales() {
                           <button
                             onClick={() => handlePageChange(pagination.page + 1)}
                             disabled={pagination.page === pagination.totalPages}
-                            className={`px-3 py-1 rounded ${pagination.page === pagination.totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                            className={`px-3 py-1 rounded-lg shadow-sm ${pagination.page === pagination.totalPages 
+                              ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-400 border border-slate-200 cursor-not-allowed' 
+                              : 'bg-gradient-to-r from-violet-100 to-fuchsia-200 text-fuchsia-600 border border-fuchsia-200 hover:shadow-md transform hover:-translate-y-0.5 transition-all'}`}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -838,7 +989,9 @@ function Sales() {
                           <button
                             onClick={() => handlePageChange(pagination.totalPages)}
                             disabled={pagination.page === pagination.totalPages}
-                            className={`px-3 py-1 rounded ${pagination.page === pagination.totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                            className={`px-3 py-1 rounded-lg shadow-sm ${pagination.page === pagination.totalPages 
+                              ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-400 border border-slate-200 cursor-not-allowed' 
+                              : 'bg-gradient-to-r from-violet-100 to-fuchsia-200 text-fuchsia-600 border border-fuchsia-200 hover:shadow-md transform hover:-translate-y-0.5 transition-all'}`}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
