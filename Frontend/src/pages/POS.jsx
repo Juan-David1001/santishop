@@ -25,7 +25,8 @@ const POS = () => {
   const [paymentInfo, setPaymentInfo] = useState({
     methods: [{ type: 'efectivo', amount: 0, reference: '' }],
     usePoints: false,
-    pointsToRedeem: 0
+    pointsToRedeem: 0,
+    manualPoints: 0
   });
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -211,7 +212,8 @@ const POS = () => {
       setPaymentInfo({
         methods: [{ type: 'efectivo', amount: 0, reference: '' }],
         usePoints: false,
-        pointsToRedeem: 0
+        pointsToRedeem: 0,
+        manualPoints: 0
       });
       setDiscountAmount(0);
       setDiscountPercent(0);
@@ -371,6 +373,14 @@ const POS = () => {
     setIsProcessing(true);
     
     try {
+      // Definir puntos personalizados o calculados
+      let pointsToAssign = 0;
+      
+      if (customer) {
+        // Si hay puntos manuales, usar ese valor, de lo contrario calcular automáticamente
+        pointsToAssign = paymentInfo.manualPoints > 0 ? paymentInfo.manualPoints : calculatePointsToEarn();
+      }
+      
       const saleData = {
         items: cart.map(item => ({
           productId: item.productId,
@@ -380,8 +390,8 @@ const POS = () => {
         })),
         payments: paymentInfo.methods.map(method => ({
           type: method.type,
-          amount: method.amount,
-          reference: method.reference
+          amount: parseFloat(method.amount) || 0,
+          reference: method.reference || ""
         })),
         userId: selectedUser.id,
         shiftId: activeShift.id,
@@ -390,7 +400,7 @@ const POS = () => {
         tax: calculateTax(),
         discount: calculateDiscount(),
         amount: total,
-        pointsEarned: customer ? calculatePointsToEarn() : 0,
+        pointsEarned: pointsToAssign,
         pointsRedeemed: customer && paymentInfo.usePoints ? paymentInfo.pointsToRedeem : 0,
         notes: notes
       };
@@ -408,7 +418,8 @@ const POS = () => {
       setPaymentInfo({
         methods: [{ type: 'efectivo', amount: 0, reference: '' }],
         usePoints: false,
-        pointsToRedeem: 0
+        pointsToRedeem: 0,
+        manualPoints: 0
       });
       setDiscountAmount(0);
       setDiscountPercent(0);
@@ -1373,51 +1384,94 @@ const POS = () => {
                 </div>
               </div>
               
-              {/* Uso de puntos si hay cliente */}
-              {customer && (customer.totalPoints - customer.usedPoints) > 0 && (
+              {/* Gestión de puntos para cliente */}
+              {customer && (
                 <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-5 h-5 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full">
-                      <span className="text-xs font-bold">P</span>
-                    </div>
-                    <h4 className="font-medium text-slate-700">Puntos disponibles</h4>
-                  </div>
-                  
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                    <div className="flex items-center mb-3">
-                      <input
-                        type="checkbox"
-                        id="usePoints"
-                        checked={paymentInfo.usePoints}
-                        onChange={(e) => setPaymentInfo({...paymentInfo, usePoints: e.target.checked})}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                      />
-                      <label htmlFor="usePoints" className="font-medium text-slate-700 ml-2">
-                        Usar puntos para esta compra
-                      </label>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full">
+                        <span className="text-xs font-bold">P</span>
+                      </div>
+                      <h4 className="font-medium text-slate-700">Puntos del cliente</h4>
                     </div>
                     
-                    {paymentInfo.usePoints && (
-                      <div>
-                        <p className="text-sm mb-3 text-blue-700">
-                          Puntos disponibles: <span className="font-semibold">{customer.totalPoints - customer.usedPoints}</span>
-                        </p>
+                    <div className="bg-blue-100 text-blue-800 px-2.5 py-1 rounded-md text-xs font-medium">
+                      Disponibles: {customer.totalPoints - customer.usedPoints} pts
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {/* Asignar puntos personalizados */}
+                    <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="font-medium text-slate-700">
+                          Asignar puntos a esta compra:
+                        </label>
+                        <span className="text-xs text-emerald-700 bg-emerald-100 px-2 py-1 rounded">
+                          {paymentInfo.manualPoints > 0 ? 'Puntos personalizados' : 'Cálculo automático'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                          <label className="text-sm font-medium text-slate-600 mr-3">Puntos a canjear:</label>
-                          <div className="flex-1">
-                            <input
-                              type="number"
-                              min="0"
-                              max={customer.totalPoints - customer.usedPoints}
-                              value={paymentInfo.pointsToRedeem}
-                              onChange={(e) => setPaymentInfo({...paymentInfo, pointsToRedeem: parseInt(e.target.value) || 0})}
-                              className="p-2 border border-blue-300 rounded-md w-24 text-right focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
-                          <span className="text-sm ml-3 text-blue-700 font-medium">
-                            = {formatCurrency(paymentInfo.pointsToRedeem * 0.1)}
+                          <input
+                            type="number"
+                            min="0"
+                            value={paymentInfo.manualPoints}
+                            onChange={(e) => setPaymentInfo({...paymentInfo, manualPoints: parseInt(e.target.value) || 0})}
+                            className="p-2 border border-emerald-300 rounded-md w-24 text-right focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          />
+                          <span className="text-sm ml-3 text-emerald-700 font-medium">
+                            puntos
                           </span>
                         </div>
+                        
+                        <div className="text-sm text-slate-600">
+                          <span className="text-slate-500">Auto:</span> {calculatePointsToEarn()} pts
+                        </div>
+                      </div>
+                      
+                      <div className="mt-2 text-xs text-slate-500 italic">
+                        Deja en 0 para calcular automáticamente ({calculatePointsToEarn()} puntos)
+                      </div>
+                    </div>
+                    
+                    {/* Canjear puntos existentes */}
+                    {(customer.totalPoints - customer.usedPoints) > 0 && (
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <div className="flex items-center mb-3">
+                          <input
+                            type="checkbox"
+                            id="usePoints"
+                            checked={paymentInfo.usePoints}
+                            onChange={(e) => setPaymentInfo({...paymentInfo, usePoints: e.target.checked})}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                          />
+                          <label htmlFor="usePoints" className="font-medium text-slate-700 ml-2">
+                            Canjear puntos para esta compra
+                          </label>
+                        </div>
+                        
+                        {paymentInfo.usePoints && (
+                          <div>
+                            <div className="flex items-center">
+                              <label className="text-sm font-medium text-slate-600 mr-3">Puntos a canjear:</label>
+                              <div className="flex-1">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={customer.totalPoints - customer.usedPoints}
+                                  value={paymentInfo.pointsToRedeem}
+                                  onChange={(e) => setPaymentInfo({...paymentInfo, pointsToRedeem: parseInt(e.target.value) || 0})}
+                                  className="p-2 border border-blue-300 rounded-md w-24 text-right focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                              </div>
+                              <span className="text-sm ml-3 text-blue-700 font-medium">
+                                = {formatCurrency(paymentInfo.pointsToRedeem * 0.1)}
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

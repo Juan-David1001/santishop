@@ -228,10 +228,18 @@ const getSales = async (req, res) => {
 const createSale = async (req, res) => {
   try {
     const { 
-      paymentMethod = 'efectivo', 
       userId, 
       shiftId: requestShiftId,
-      items = [] 
+      items = [],
+      clientId = null,
+      payments = [],
+      subtotal = 0,
+      tax = 0,
+      discount = 0,
+      amount = 0,
+      pointsEarned = 0,
+      pointsRedeemed = 0,
+      notes = ''
     } = req.body;
     
     // Validar que hay items en la venta
@@ -239,12 +247,19 @@ const createSale = async (req, res) => {
       return res.status(400).json({ error: 'La venta debe tener al menos un producto' });
     }
     
-    // Validar el método de pago
-    const validPaymentMethods = ['efectivo', 'transferencia'];
-    if (!validPaymentMethods.includes(paymentMethod)) {
-      return res.status(400).json({ 
-        error: `Método de pago no válido. Debe ser uno de: ${validPaymentMethods.join(', ')}` 
-      });
+    // Validar que hay métodos de pago
+    if (!payments.length) {
+      return res.status(400).json({ error: 'Debe especificar al menos un método de pago' });
+    }
+    
+    // Validar los métodos de pago
+    const validPaymentMethods = ['efectivo', 'tarjeta', 'transferencia', 'puntos', 'otro'];
+    for (const payment of payments) {
+      if (!validPaymentMethods.includes(payment.type)) {
+        return res.status(400).json({ 
+          error: `Método de pago '${payment.type}' no válido. Debe ser uno de: ${validPaymentMethods.join(', ')}` 
+        });
+      }
     }
 
     // Usar el shiftId proporcionado o intentar obtenerlo del usuario
@@ -287,45 +302,42 @@ const createSale = async (req, res) => {
       }
     }
     
-    // Calcular monto total de la venta
-    const amount = items.reduce((sum, item) => {
-      const product = productsMap[item.productId];
-      return sum + (product.sellingPrice * item.quantity);
-    }, 0);
-    
     // Crear la venta
     const sale = await prisma.$transaction(async (prisma) => {
-      // Crear la venta
+      // Crear la venta con todos los datos proporcionados
       const newSale = await prisma.sale.create({
         data: {
           amount,
-          subtotal: amount, // Asumiendo que el subtotal es igual al monto total por ahora
+          subtotal,
+          tax,
+          discount,
           userId: userId ? parseInt(userId) : null,
           shiftId,
+          clientId: clientId ? parseInt(clientId) : null,
+          pointsEarned: parseInt(pointsEarned) || 0,
+          pointsRedeemed: parseInt(pointsRedeemed) || 0,
+          notes,
           saleItems: {
-            create: items.map(item => {
-              const product = productsMap[item.productId];
-              return {
-                productId: item.productId,
-                quantity: item.quantity,
-                unitPrice: product.sellingPrice,
-                totalPrice: product.sellingPrice * item.quantity
-              };
-            })
+            create: items.map(item => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              totalPrice: item.totalPrice
+            }))
           },
           payments: {
-            create: [
-              {
-                type: paymentMethod,
-                amount,
-                reference: null
-              }
-            ]
+            create: payments.map(payment => ({
+              type: payment.type,
+              amount: parseFloat(payment.amount) || 0,
+              reference: payment.reference || null
+            }))
           }
         },
         include: {
           user: true,
           shift: true,
+          client: true,
+          payments: true,
           saleItems: {
             include: {
               product: true
@@ -333,6 +345,26 @@ const createSale = async (req, res) => {
           }
         }
       });
+      
+      // Actualizar puntos del cliente si corresponde
+      if (clientId && (pointsEarned > 0 || pointsRedeemed > 0)) {
+        const client = await prisma.client.findUnique({
+          where: { id: parseInt(clientId) }
+        });
+        
+        if (client) {
+          // Actualizar los puntos del cliente
+          await prisma.client.update({
+            where: { id: parseInt(clientId) },
+            data: {
+              totalPoints: client.totalPoints + parseInt(pointsEarned),
+              usedPoints: client.usedPoints + parseInt(pointsRedeemed),
+              totalSpent: { increment: amount },
+              lastVisit: new Date()
+            }
+          });
+        }
+      }
       
       // Actualizar el stock de los productos
       for (const item of items) {
