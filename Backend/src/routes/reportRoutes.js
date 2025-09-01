@@ -18,4 +18,13 @@ router.get('/payment-status', asyncHandler(reportController.getPaymentStatus));
 // Balance general
 router.get('/general-balance', asyncHandler(reportController.getGeneralBalance));
 
+// Valorización de Inventario
+router.get('/inventory-valuation', asyncHandler(reportController.getInventoryValuation));
+
+// Movimientos de Stock
+router.get('/stock-movements', asyncHandler(reportController.getStockMovements));
+
+// Distribución por Categorías
+router.get('/category-distribution', asyncHandler(reportController.getCategoryDistribution));
+
 module.exports = router;

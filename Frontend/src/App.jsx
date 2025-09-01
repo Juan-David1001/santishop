@@ -30,6 +30,9 @@ function App() {
             style: {
               background: '#10B981',
               color: '#fff',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              padding: '12px 16px',
             },
           },
           error: {
@@ -37,6 +40,19 @@ function App() {
             style: {
               background: '#EF4444',
               color: '#fff',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              padding: '12px 16px',
+            },
+          },
+          custom: {
+            duration: 3500,
+            style: {
+              background: '#4F46E5', // indigo-600
+              color: '#fff',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              padding: '12px 16px',
             },
           },
         }}

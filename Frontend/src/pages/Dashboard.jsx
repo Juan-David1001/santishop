@@ -3,6 +3,7 @@ import apiClient from '../utils/apiClient';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import toast from 'react-hot-toast';
+import { RiArrowUpLine, RiArrowDownLine, RiRefreshLine, RiCalendarLine, RiBarChartBoxLine, RiPieChartLine, RiLineChartLine } from 'react-icons/ri';
 
 // Registrar los componentes de Chart.js
 ChartJS.register(
@@ -21,6 +22,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('day'); // 'day', 'week', 'month'
+  const [refreshing, setRefreshing] = useState(false);
   const [salesData, setSalesData] = useState({
     day: { total: 0, byMethod: {}, hourly: [] },
     week: { total: 0, byMethod: {}, daily: [] },
@@ -103,6 +105,7 @@ function Dashboard() {
   // Cargar todos los datos necesarios
   const fetchAllData = useCallback(async () => {
     try {
+      setRefreshing(true);
       setLoading(true);
       
       // Fechas para filtrado
@@ -189,6 +192,7 @@ function Dashboard() {
       toast.error('Error al cargar los datos del dashboard');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -229,17 +233,17 @@ function Dashboard() {
         {
           label: 'Ventas',
           data: salesData.day.hourly,
-          borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          borderColor: 'rgb(99, 102, 241)',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
           fill: true,
           tension: 0.4,
-          pointBackgroundColor: 'rgb(59, 130, 246)',
+          pointBackgroundColor: 'rgb(99, 102, 241)',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgb(59, 130, 246)',
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          borderWidth: 3
+          pointHoverBorderColor: 'rgb(99, 102, 241)',
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          borderWidth: 2
         }
       ]
     },
@@ -249,17 +253,17 @@ function Dashboard() {
         {
           label: 'Ventas',
           data: salesData.week.daily,
-          borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          borderColor: 'rgb(99, 102, 241)',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
           fill: true,
           tension: 0.4,
-          pointBackgroundColor: 'rgb(59, 130, 246)',
+          pointBackgroundColor: 'rgb(99, 102, 241)',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgb(59, 130, 246)',
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          borderWidth: 3
+          pointHoverBorderColor: 'rgb(99, 102, 241)',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderWidth: 2
         }
       ]
     },
@@ -269,17 +273,17 @@ function Dashboard() {
         {
           label: 'Ventas',
           data: salesData.month.daily,
-          borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          borderColor: 'rgb(99, 102, 241)',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
           fill: true,
           tension: 0.4,
-          pointBackgroundColor: 'rgb(59, 130, 246)',
+          pointBackgroundColor: 'rgb(99, 102, 241)',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgb(59, 130, 246)',
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          borderWidth: 3
+          pointHoverBorderColor: 'rgb(99, 102, 241)',
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          borderWidth: 2
         }
       ]
     }
@@ -292,17 +296,17 @@ function Dashboard() {
         {
           label: 'Pagos',
           data: paymentsData.day.hourly,
-          borderColor: 'rgb(239, 68, 68)',
-          backgroundColor: 'rgba(239, 68, 68, 0.2)',
+          borderColor: 'rgb(244, 63, 94)',
+          backgroundColor: 'rgba(244, 63, 94, 0.1)',
           fill: true,
           tension: 0.4,
-          pointBackgroundColor: 'rgb(239, 68, 68)',
+          pointBackgroundColor: 'rgb(244, 63, 94)',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgb(239, 68, 68)',
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          borderWidth: 3
+          pointHoverBorderColor: 'rgb(244, 63, 94)',
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          borderWidth: 2
         }
       ]
     },
@@ -312,17 +316,17 @@ function Dashboard() {
         {
           label: 'Pagos',
           data: paymentsData.week.daily,
-          borderColor: 'rgb(239, 68, 68)',
-          backgroundColor: 'rgba(239, 68, 68, 0.2)',
+          borderColor: 'rgb(244, 63, 94)',
+          backgroundColor: 'rgba(244, 63, 94, 0.1)',
           fill: true,
           tension: 0.4,
-          pointBackgroundColor: 'rgb(239, 68, 68)',
+          pointBackgroundColor: 'rgb(244, 63, 94)',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgb(239, 68, 68)',
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          borderWidth: 3
+          pointHoverBorderColor: 'rgb(244, 63, 94)',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderWidth: 2
         }
       ]
     },
@@ -332,17 +336,17 @@ function Dashboard() {
         {
           label: 'Pagos',
           data: paymentsData.month.daily,
-          borderColor: 'rgb(239, 68, 68)',
-          backgroundColor: 'rgba(239, 68, 68, 0.2)',
+          borderColor: 'rgb(244, 63, 94)',
+          backgroundColor: 'rgba(244, 63, 94, 0.1)',
           fill: true,
           tension: 0.4,
-          pointBackgroundColor: 'rgb(239, 68, 68)',
+          pointBackgroundColor: 'rgb(244, 63, 94)',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgb(239, 68, 68)',
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          borderWidth: 3
+          pointHoverBorderColor: 'rgb(244, 63, 94)',
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          borderWidth: 2
         }
       ]
     }
@@ -362,20 +366,20 @@ function Dashboard() {
         label: 'Método de Pago',
         data: Object.values(salesData[activeTab].byMethod),
         backgroundColor: [
-          'rgba(59, 130, 246, 0.85)',
-          'rgba(16, 185, 129, 0.85)',
-          'rgba(139, 92, 246, 0.85)',
-          'rgba(249, 115, 22, 0.85)',
-          'rgba(236, 72, 153, 0.85)',
-          'rgba(107, 114, 128, 0.85)'
+          'rgba(99, 102, 241, 0.85)',  // indigo-500
+          'rgba(14, 165, 233, 0.85)',  // sky-500
+          'rgba(168, 85, 247, 0.85)',  // purple-500
+          'rgba(249, 115, 22, 0.85)',  // orange-500
+          'rgba(236, 72, 153, 0.85)',  // pink-500
+          'rgba(107, 114, 128, 0.85)'  // gray-500
         ],
         borderColor: [
-          'rgb(30, 64, 175)',
-          'rgb(6, 95, 70)',
-          'rgb(91, 33, 182)',
-          'rgb(194, 65, 12)',
-          'rgb(190, 24, 93)',
-          'rgb(55, 65, 81)'
+          'rgb(79, 70, 229)',  // indigo-600
+          'rgb(2, 132, 199)',  // sky-600
+          'rgb(147, 51, 234)', // purple-600
+          'rgb(234, 88, 12)',  // orange-600
+          'rgb(219, 39, 119)', // pink-600
+          'rgb(75, 85, 99)'    // gray-600
         ],
         borderWidth: 2,
         borderRadius: 4,
@@ -394,18 +398,18 @@ function Dashboard() {
         label: 'Pagos por Proveedor',
         data: Object.values(paymentsData[activeTab].bySupplier).slice(0, 5),
         backgroundColor: [
-          'rgba(239, 68, 68, 0.85)',
-          'rgba(245, 158, 11, 0.85)',
-          'rgba(139, 92, 246, 0.85)',
-          'rgba(236, 72, 153, 0.85)',
-          'rgba(75, 85, 99, 0.85)'
+          'rgba(244, 63, 94, 0.85)',   // rose-500
+          'rgba(249, 115, 22, 0.85)',  // orange-500
+          'rgba(168, 85, 247, 0.85)',  // purple-500
+          'rgba(20, 184, 166, 0.85)',  // teal-500
+          'rgba(75, 85, 99, 0.85)'     // gray-500
         ],
         borderColor: [
-          'rgb(185, 28, 28)',
-          'rgb(194, 120, 3)',
-          'rgb(107, 33, 168)',
-          'rgb(157, 23, 77)',
-          'rgb(31, 41, 55)'
+          'rgb(225, 29, 72)',    // rose-600
+          'rgb(234, 88, 12)',    // orange-600
+          'rgb(147, 51, 234)',   // purple-600
+          'rgb(13, 148, 136)',   // teal-600
+          'rgb(55, 65, 81)'      // gray-700
         ],
         borderWidth: 2,
         borderRadius: 8,
@@ -414,11 +418,11 @@ function Dashboard() {
         maxBarThickness: 40,
         borderSkipped: false,
         hoverBackgroundColor: [
-          'rgba(239, 68, 68, 0.95)',
-          'rgba(245, 158, 11, 0.95)',
-          'rgba(139, 92, 246, 0.95)',
-          'rgba(236, 72, 153, 0.95)',
-          'rgba(75, 85, 99, 0.95)'
+          'rgba(244, 63, 94, 0.95)',  // rose-500
+          'rgba(249, 115, 22, 0.95)', // orange-500
+          'rgba(168, 85, 247, 0.95)', // purple-500
+          'rgba(20, 184, 166, 0.95)', // teal-500
+          'rgba(75, 85, 99, 0.95)'    // gray-500
         ]
       }
     ]
@@ -436,11 +440,12 @@ function Dashboard() {
             family: 'Inter, system-ui, sans-serif'
           },
           padding: 15,
-          usePointStyle: true
+          usePointStyle: true,
+          boxWidth: 8
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+        backgroundColor: 'rgba(15, 23, 42, 0.9)', // slate-900
         titleColor: '#fff',
         bodyColor: '#fff',
         bodyFont: {
@@ -479,18 +484,20 @@ function Dashboard() {
         },
         ticks: {
           font: {
-            size: 10
+            size: 10,
+            family: 'Inter, system-ui, sans-serif'
           }
         }
       },
       y: {
         beginAtZero: true,
         grid: {
-          color: 'rgba(156, 163, 175, 0.15)'
+          color: 'rgba(203, 213, 225, 0.15)' // slate-200
         },
         ticks: {
           font: {
-            size: 11
+            size: 11,
+            family: 'Inter, system-ui, sans-serif'
           },
           callback: function(value) {
             return new Intl.NumberFormat('es-ES', {
@@ -506,7 +513,7 @@ function Dashboard() {
     },
     elements: {
       line: {
-        borderWidth: 3,
+        borderWidth: 2,
       },
       point: {
         radius: 3,
@@ -538,19 +545,22 @@ function Dashboard() {
     }
   };
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
-      <div className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-3">Dashboard</h1>
+      <div className="container mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-slate-800">Dashboard</h1>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-gray-300 animate-pulse">
+            <div key={i} className="bg-white rounded-xl shadow-sm p-6 animate-pulse">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="h-4 bg-gray-200 rounded w-24 mb-3"></div>
-                  <div className="h-8 bg-gray-200 rounded w-32"></div>
+                  <div className="h-4 bg-slate-200 rounded w-24 mb-3"></div>
+                  <div className="h-8 bg-slate-200 rounded w-32"></div>
                 </div>
-                <div className="rounded-full bg-gray-200 h-12 w-12"></div>
+                <div className="rounded-full bg-slate-200 h-12 w-12"></div>
               </div>
             </div>
           ))}
@@ -558,13 +568,13 @@ function Dashboard() {
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="px-6 py-4 bg-gradient-to-r from-gray-200 to-gray-300">
-                <div className="h-6 bg-gray-300 rounded w-48"></div>
+            <div key={i} className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <div className="h-6 bg-slate-200 rounded w-48"></div>
               </div>
               <div className="p-6 animate-pulse" style={{ height: '300px' }}>
                 <div className="flex items-center justify-center h-full">
-                  <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="w-12 h-12 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 </div>
@@ -576,76 +586,108 @@ function Dashboard() {
     );
   }
 
+  const getPercentageChange = (currentValue, previousValue) => {
+    if (previousValue === 0) return 100;
+    return ((currentValue - previousValue) / previousValue) * 100;
+  };
+
+  // Calcular algunos indicadores de cambio para mostrar
+  const salesDayChange = getPercentageChange(
+    salesData.day.total,
+    salesData.day.total > 0 ? salesData.day.total * 0.8 : 0 // Simulado para ejemplo
+  );
+
+  const paymentsDayChange = getPercentageChange(
+    paymentsData.day.total,
+    paymentsData.day.total > 0 ? paymentsData.day.total * 1.1 : 0 // Simulado para ejemplo
+  );
+
+  const balanceChange = getPercentageChange(
+    salesData.day.total - paymentsData.day.total,
+    (salesData.day.total - paymentsData.day.total) * 0.9 // Simulado para ejemplo
+  );
+
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-3">Dashboard</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-slate-800">Dashboard</h1>
+        
+        <button 
+          onClick={() => {
+            toast.promise(
+              fetchAllData(),
+              {
+                loading: 'Actualizando datos...',
+                success: 'Datos actualizados correctamente',
+                error: 'Error al actualizar los datos'
+              }
+            );
+          }}
+          disabled={refreshing}
+          className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-all duration-200"
+        >
+          <RiRefreshLine className={`text-lg ${refreshing ? 'animate-spin' : ''}`} />
+          {refreshing ? 'Actualizando...' : 'Actualizar datos'}
+        </button>
+      </div>
       
       {/* Selector de periodos */}
-      <div className="flex flex-wrap mb-6">
-        <div className="w-full bg-white rounded-lg shadow-md overflow-hidden mb-6">
-          <div className="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200">
-            <button 
+      <div className="bg-white rounded-xl shadow-sm mb-8">
+        <div className="flex items-center p-6 border-b border-slate-100">
+          <div className="flex items-center space-x-2 text-slate-800">
+            <RiCalendarLine className="text-lg text-slate-500" />
+            <span className="font-medium">Periodo:</span>
+          </div>
+          
+          <div className="ml-auto flex rounded-lg bg-slate-100 p-1">
+            <button
               onClick={() => handleTabChange('day')}
-              className={`inline-block p-4 w-full md:w-auto transition-all duration-200 ${activeTab === 'day' 
-                ? 'text-blue-600 bg-blue-50 font-semibold border-b-2 border-blue-600' 
-                : 'hover:text-blue-600 hover:bg-gray-50'}`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                activeTab === 'day' 
+                  ? 'bg-white text-indigo-600 shadow-sm' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <div className="flex items-center justify-center">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Hoy
-              </div>
+              Hoy
             </button>
-            <button 
+            <button
               onClick={() => handleTabChange('week')}
-              className={`inline-block p-4 w-full md:w-auto transition-all duration-200 ${activeTab === 'week' 
-                ? 'text-blue-600 bg-blue-50 font-semibold border-b-2 border-blue-600' 
-                : 'hover:text-blue-600 hover:bg-gray-50'}`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                activeTab === 'week' 
+                  ? 'bg-white text-indigo-600 shadow-sm' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <div className="flex items-center justify-center">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Esta Semana
-              </div>
+              Esta semana
             </button>
-            <button 
+            <button
               onClick={() => handleTabChange('month')}
-              className={`inline-block p-4 w-full md:w-auto transition-all duration-200 ${activeTab === 'month' 
-                ? 'text-blue-600 bg-blue-50 font-semibold border-b-2 border-blue-600' 
-                : 'hover:text-blue-600 hover:bg-gray-50'}`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                activeTab === 'month' 
+                  ? 'bg-white text-indigo-600 shadow-sm' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <div className="flex items-center justify-center">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Este Mes
-              </div>
+              Este mes
             </button>
           </div>
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2 md:mb-0">
-                <span className="text-blue-600">{getTabTitle()}</span> - Resumen
-              </h2>
-              <p className="text-gray-500 bg-gray-100 px-3 py-1 rounded-full text-sm font-medium inline-flex items-center">
-                <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {activeTab === 'day' && `${new Date().toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'})}`}
-                {activeTab === 'week' && `${new Date(getWeekStartDate()).toLocaleDateString('es-ES', {day: 'numeric', month: 'short'})} - ${new Date().toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'})}`}
-                {activeTab === 'month' && `${new Date(getMonthStartDate()).toLocaleDateString('es-ES', {day: 'numeric', month: 'short'})} - ${new Date().toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'})}`}
-              </p>
-            </div>
+        </div>
+        
+        <div className="p-6">
+          <div className="flex items-center">
+            <span className="text-sm text-slate-500">
+              {activeTab === 'day' && `${new Date().toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'})}`}
+              {activeTab === 'week' && `${new Date(getWeekStartDate()).toLocaleDateString('es-ES', {day: 'numeric', month: 'short'})} - ${new Date().toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'})}`}
+              {activeTab === 'month' && `${new Date(getMonthStartDate()).toLocaleDateString('es-ES', {day: 'numeric', month: 'short'})} - ${new Date().toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'})}`}
+            </span>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded mb-6 shadow-sm">
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 px-6 py-4 rounded-lg mb-8 shadow-sm">
           <div className="flex items-center">
-            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p>{error}</p>
@@ -656,48 +698,75 @@ function Dashboard() {
       {/* Tarjetas de resumen */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Total Ventas */}
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium text-gray-500 mb-1">Total Ventas</h3>
-              <p className="text-3xl font-bold text-blue-600">{formatCurrency(salesData[activeTab].total)}</p>
+        <div className="bg-white rounded-xl shadow-sm p-6 transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-medium text-slate-500">Total Ventas</h3>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                salesDayChange >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+              }`}>
+                {salesDayChange >= 0 ? <RiArrowUpLine /> : <RiArrowDownLine />}
+                {Math.abs(salesDayChange).toFixed(1)}%
+              </span>
             </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="rounded-full p-2 bg-indigo-50">
+              <RiBarChartBoxLine className="text-xl text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-slate-800">{formatCurrency(salesData[activeTab].total)}</p>
+              <p className="text-sm text-slate-500 mt-0.5">{getTabTitle()}</p>
             </div>
           </div>
         </div>
 
         {/* Total Pagos */}
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium text-gray-500 mb-1">Total Pagos</h3>
-              <p className="text-3xl font-bold text-red-600">{formatCurrency(paymentsData[activeTab].total)}</p>
+        <div className="bg-white rounded-xl shadow-sm p-6 transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-medium text-slate-500">Total Pagos</h3>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                paymentsDayChange <= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+              }`}>
+                {paymentsDayChange <= 0 ? <RiArrowUpLine /> : <RiArrowDownLine />}
+                {Math.abs(paymentsDayChange).toFixed(1)}%
+              </span>
             </div>
-            <div className="p-3 bg-red-100 rounded-full">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="rounded-full p-2 bg-rose-50">
+              <RiBarChartBoxLine className="text-xl text-rose-600" />
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-slate-800">{formatCurrency(paymentsData[activeTab].total)}</p>
+              <p className="text-sm text-slate-500 mt-0.5">{getTabTitle()}</p>
             </div>
           </div>
         </div>
         
         {/* Balance */}
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-xl shadow-sm p-6 transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-medium text-slate-500">Balance</h3>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                balanceChange >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+              }`}>
+                {balanceChange >= 0 ? <RiArrowUpLine /> : <RiArrowDownLine />}
+                {Math.abs(balanceChange).toFixed(1)}%
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className={`rounded-full p-2 ${salesData[activeTab].total - paymentsData[activeTab].total >= 0 ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+              <RiBarChartBoxLine className={`text-xl ${salesData[activeTab].total - paymentsData[activeTab].total >= 0 ? 'text-emerald-600' : 'text-amber-600'}`} />
+            </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-500 mb-1">Balance</h3>
-              <p className={`text-3xl font-bold ${salesData[activeTab].total - paymentsData[activeTab].total >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`text-3xl font-bold text-slate-800`}>
                 {formatCurrency(salesData[activeTab].total - paymentsData[activeTab].total)}
               </p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
+              <p className="text-sm text-slate-500 mt-0.5">{getTabTitle()}</p>
             </div>
           </div>
         </div>
@@ -706,9 +775,15 @@ function Dashboard() {
       {/* Gráficas principales */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Gráfica de ventas */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-          <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700">
-            <h3 className="text-lg font-medium text-white">Ventas por {activeTab === 'day' ? 'Hora' : 'Día'}</h3>
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <RiLineChartLine className="text-lg text-indigo-600" />
+              <h3 className="text-lg font-medium text-slate-800">Ventas por {activeTab === 'day' ? 'Hora' : 'Día'}</h3>
+            </div>
+            <span className="bg-indigo-50 text-indigo-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+              {activeTab === 'day' ? 'Hoy' : activeTab === 'week' ? '7 días' : '30 días'}
+            </span>
           </div>
           <div className="p-6" style={{ height: '300px' }}>
             <Line 
@@ -719,9 +794,15 @@ function Dashboard() {
         </div>
 
         {/* Gráfica de pagos */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-          <div className="px-6 py-4 bg-gradient-to-r from-red-600 to-red-700">
-            <h3 className="text-lg font-medium text-white">Pagos por {activeTab === 'day' ? 'Hora' : 'Día'}</h3>
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <RiLineChartLine className="text-lg text-rose-600" />
+              <h3 className="text-lg font-medium text-slate-800">Pagos por {activeTab === 'day' ? 'Hora' : 'Día'}</h3>
+            </div>
+            <span className="bg-rose-50 text-rose-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+              {activeTab === 'day' ? 'Hoy' : activeTab === 'week' ? '7 días' : '30 días'}
+            </span>
           </div>
           <div className="p-6" style={{ height: '300px' }}>
             <Line 
@@ -735,9 +816,15 @@ function Dashboard() {
       {/* Gráficas circulares */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Ventas por método de pago */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-          <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700">
-            <h3 className="text-lg font-medium text-white">Ventas por Método de Pago</h3>
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <RiPieChartLine className="text-lg text-indigo-600" />
+              <h3 className="text-lg font-medium text-slate-800">Ventas por Método de Pago</h3>
+            </div>
+            <span className="bg-indigo-50 text-indigo-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+              {getTabTitle()}
+            </span>
           </div>
           <div className="p-6 flex justify-center" style={{ height: '300px' }}>
             {Object.keys(salesData[activeTab].byMethod).length > 0 ? (
@@ -754,17 +841,27 @@ function Dashboard() {
                 }} 
               />
             ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500">No hay datos disponibles</p>
+              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                </svg>
+                <p>No hay datos disponibles</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Pagos por proveedor */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-          <div className="px-6 py-4 bg-gradient-to-r from-red-600 to-red-700">
-            <h3 className="text-lg font-medium text-white">Top 5 Pagos por Proveedor</h3>
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <RiBarChartBoxLine className="text-lg text-rose-600" />
+              <h3 className="text-lg font-medium text-slate-800">Top 5 Pagos por Proveedor</h3>
+            </div>
+            <span className="bg-rose-50 text-rose-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+              {getTabTitle()}
+            </span>
           </div>
           <div className="p-6 flex justify-center" style={{ height: '300px' }}>
             {Object.keys(paymentsData[activeTab].bySupplier).length > 0 ? (
@@ -782,8 +879,11 @@ function Dashboard() {
                 }} 
               />
             ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500">No hay datos disponibles</p>
+              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p>No hay datos disponibles</p>
               </div>
             )}
           </div>
@@ -793,34 +893,54 @@ function Dashboard() {
       {/* Transacciones recientes */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Ventas recientes */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-          <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700">
-            <h3 className="text-lg font-medium text-white">Ventas Recientes</h3>
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <RiLineChartLine className="text-lg text-indigo-600" />
+                <h3 className="text-lg font-medium text-slate-800">Ventas Recientes</h3>
+              </div>
+              {recentTransactions.sales.length > 0 && (
+                <span className="bg-indigo-50 text-indigo-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                  {recentTransactions.sales.length} {recentTransactions.sales.length === 1 ? 'transacción' : 'transacciones'}
+                </span>
+              )}
+            </div>
           </div>
           <div className="p-6">
             {recentTransactions.sales.length === 0 ? (
-              <div className="text-center py-6">
-                <svg className="w-16 h-16 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div className="text-center py-10">
+                <svg className="w-16 h-16 mx-auto text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <p className="mt-2 text-gray-500">No hay ventas recientes</p>
+                <p className="mt-4 text-slate-500">No hay ventas recientes</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full bg-white">
+                <table className="min-w-full">
                   <thead>
-                    <tr className="bg-gray-100 border-b">
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">Fecha</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">Método</th>
-                      <th className="text-right py-3 px-4 font-medium text-gray-600">Monto</th>
+                    <tr className="border-b border-slate-100">
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Fecha</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Método</th>
+                      <th className="text-right py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Monto</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-slate-100">
                     {recentTransactions.sales.map((sale) => (
-                      <tr key={sale.id} className="hover:bg-gray-50">
-                        <td className="py-3 px-4">{formatDate(sale.createdAt)}</td>
-                        <td className="py-3 px-4 capitalize">{sale.paymentMethod}</td>
-                        <td className="py-3 px-4 text-right font-medium text-blue-600">{formatCurrency(sale.amount)}</td>
+                      <tr key={sale.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4 text-sm text-slate-600">{formatDate(sale.createdAt)}</td>
+                        <td className="py-3 px-4 text-sm capitalize">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
+                            sale.paymentMethod === 'efectivo' ? 'bg-emerald-100 text-emerald-800' :
+                            sale.paymentMethod === 'tarjeta' ? 'bg-indigo-100 text-indigo-800' :
+                            sale.paymentMethod === 'transferencia' ? 'bg-sky-100 text-sky-800' :
+                            sale.paymentMethod === 'credito' ? 'bg-amber-100 text-amber-800' :
+                            'bg-slate-100 text-slate-800'
+                          }`}>
+                            {sale.paymentMethod}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-right font-medium text-indigo-600">{formatCurrency(sale.amount)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -831,34 +951,44 @@ function Dashboard() {
         </div>
 
         {/* Pagos recientes */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-          <div className="px-6 py-4 bg-gradient-to-r from-red-600 to-red-700">
-            <h3 className="text-lg font-medium text-white">Pagos Recientes a Proveedores</h3>
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <RiLineChartLine className="text-lg text-rose-600" />
+                <h3 className="text-lg font-medium text-slate-800">Pagos Recientes a Proveedores</h3>
+              </div>
+              {recentTransactions.payments.length > 0 && (
+                <span className="bg-rose-50 text-rose-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                  {recentTransactions.payments.length} {recentTransactions.payments.length === 1 ? 'transacción' : 'transacciones'}
+                </span>
+              )}
+            </div>
           </div>
           <div className="p-6">
             {recentTransactions.payments.length === 0 ? (
-              <div className="text-center py-6">
-                <svg className="w-16 h-16 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div className="text-center py-10">
+                <svg className="w-16 h-16 mx-auto text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <p className="mt-2 text-gray-500">No hay pagos recientes</p>
+                <p className="mt-4 text-slate-500">No hay pagos recientes</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full bg-white">
+                <table className="min-w-full">
                   <thead>
-                    <tr className="bg-gray-100 border-b">
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">Fecha</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">Proveedor</th>
-                      <th className="text-right py-3 px-4 font-medium text-gray-600">Monto</th>
+                    <tr className="border-b border-slate-100">
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Fecha</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Proveedor</th>
+                      <th className="text-right py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Monto</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-slate-100">
                     {recentTransactions.payments.map((payment) => (
-                      <tr key={payment.id} className="hover:bg-gray-50">
-                        <td className="py-3 px-4">{formatDate(payment.createdAt)}</td>
-                        <td className="py-3 px-4">{payment.supplier}</td>
-                        <td className="py-3 px-4 text-right font-medium text-red-600">{formatCurrency(payment.amount)}</td>
+                      <tr key={payment.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4 text-sm text-slate-600">{formatDate(payment.createdAt)}</td>
+                        <td className="py-3 px-4 text-sm text-slate-800 font-medium">{payment.supplier}</td>
+                        <td className="py-3 px-4 text-sm text-right font-medium text-rose-600">{formatCurrency(payment.amount)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -867,28 +997,6 @@ function Dashboard() {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Botón para actualizar datos */}
-      <div className="mt-8 mb-4 flex justify-end">
-        <button 
-          onClick={() => {
-            toast.promise(
-              fetchAllData(),
-              {
-                loading: 'Actualizando datos...',
-                success: 'Datos actualizados correctamente',
-                error: 'Error al actualizar los datos'
-              }
-            );
-          }}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-md flex items-center transition-all duration-300 hover:shadow-lg active:transform active:scale-95"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Actualizar datos
-        </button>
       </div>
     </div>
   );

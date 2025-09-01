@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import apiClient from '../utils/apiClient';
+// Importando iconos para mejorar la UI
+import { RiAddLine, RiSearchLine, RiEditLine, RiDeleteBin6Line, RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri';
 
 function Inventory() {
   const [products, setProducts] = useState([]);
@@ -151,51 +153,57 @@ function Inventory() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestión de Inventario</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-800">Gestión de Inventario</h1>
         <button
           onClick={() => setShowAddProduct(!showAddProduct)}
-          className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg shadow-sm transition-all duration-200 ${showAddProduct ? 'bg-gray-600 hover:bg-gray-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white font-medium`}
         >
-          {showAddProduct ? 'Cancelar' : 'Agregar Producto'}
+          {showAddProduct ? (
+            'Cancelar'
+          ) : (
+            <>
+              <RiAddLine className="text-lg" /> Agregar Producto
+            </>
+          )}
         </button>
       </div>
 
       {/* Formulario para agregar producto */}
       {showAddProduct && (
-        <div className="bg-white p-6 mb-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Agregar Nuevo Producto</h2>
-          <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white p-8 mb-8 rounded-xl shadow-md border border-gray-100">
+          <h2 className="text-2xl font-semibold mb-6 text-gray-800 border-b border-gray-100 pb-3">Agregar Nuevo Producto</h2>
+          <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block mb-1">SKU</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">SKU</label>
               <input
                 type="text"
                 name="sku"
                 value={newProduct.sku}
                 onChange={handleProductFormChange}
-                className="w-full border rounded p-2"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200"
                 required
               />
             </div>
             <div>
-              <label className="block mb-1">Nombre</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">Nombre</label>
               <input
                 type="text"
                 name="name"
                 value={newProduct.name}
                 onChange={handleProductFormChange}
-                className="w-full border rounded p-2"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200"
                 required
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block mb-1">Descripción</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">Descripción</label>
               <textarea
                 name="description"
                 value={newProduct.description}
                 onChange={handleProductFormChange}
-                className="w-full border rounded p-2"
-                rows="2"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200"
+                rows="3"
               ></textarea>
             </div>
             <div>
@@ -265,9 +273,9 @@ function Inventory() {
             <div className="md:col-span-2 flex justify-end">
               <button
                 type="submit"
-                className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-8 rounded-lg shadow-sm font-medium transition-all duration-200 flex items-center gap-2"
               >
-                Guardar Producto
+                <RiAddLine className="text-lg" /> Guardar Producto
               </button>
             </div>
           </form>
@@ -275,27 +283,32 @@ function Inventory() {
       )}
 
       {/* Filtros */}
-      <div className="bg-white p-4 mb-6 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-3">Filtros</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white p-6 mb-8 rounded-xl shadow-md border border-gray-100">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center gap-2">
+          <RiSearchLine className="text-indigo-500" /> Filtros de Búsqueda
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label className="block mb-1">Nombre o SKU</label>
-            <input
-              type="text"
-              name="name"
-              value={filters.name}
-              onChange={handleFilterChange}
-              className="w-full border rounded p-2"
-              placeholder="Buscar por nombre o SKU"
-            />
+            <label className="block mb-2 text-sm font-medium text-gray-700">Nombre o SKU</label>
+            <div className="relative">
+              <input
+                type="text"
+                name="name"
+                value={filters.name}
+                onChange={handleFilterChange}
+                className="w-full pl-10 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200"
+                placeholder="Buscar por nombre o SKU"
+              />
+              <RiSearchLine className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            </div>
           </div>
           <div>
-            <label className="block mb-1">Categoría</label>
+            <label className="block mb-2 text-sm font-medium text-gray-700">Categoría</label>
             <select
               name="categoryId"
               value={filters.categoryId}
               onChange={handleFilterChange}
-              className="w-full border rounded p-2"
+              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 bg-white"
             >
               <option value="">Todas las categorías</option>
               {categories.map(category => (
@@ -304,61 +317,69 @@ function Inventory() {
             </select>
           </div>
           <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="lowStock"
-              name="lowStock"
-              checked={filters.lowStock}
-              onChange={handleFilterChange}
-              className="mr-2"
-            />
-            <label htmlFor="lowStock">Mostrar solo productos con stock bajo</label>
+            <div className="flex items-center h-full pt-7">
+              <input
+                type="checkbox"
+                id="lowStock"
+                name="lowStock"
+                checked={filters.lowStock}
+                onChange={handleFilterChange}
+                className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+              />
+              <label htmlFor="lowStock" className="ml-2 text-gray-700">Mostrar solo productos con stock bajo</label>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Tarjetas de valorización */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-blue-100 p-4 rounded-lg shadow">
-          <h3 className="text-sm text-blue-800 font-medium">Valor de Costo Total</h3>
-          <p className="text-2xl font-bold">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(valuation.totalCostValue)}</p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white border-l-4 border-blue-500 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
+          <h3 className="text-sm text-gray-500 font-medium uppercase tracking-wide">Valor de Costo Total</h3>
+          <p className="text-2xl font-bold text-gray-800 mt-2">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(valuation.totalCostValue)}</p>
         </div>
-        <div className="bg-green-100 p-4 rounded-lg shadow">
-          <h3 className="text-sm text-green-800 font-medium">Valor de Venta Total</h3>
-          <p className="text-2xl font-bold">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(valuation.totalSellingValue)}</p>
+        <div className="bg-white border-l-4 border-green-500 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
+          <h3 className="text-sm text-gray-500 font-medium uppercase tracking-wide">Valor de Venta Total</h3>
+          <p className="text-2xl font-bold text-gray-800 mt-2">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(valuation.totalSellingValue)}</p>
         </div>
-        <div className="bg-purple-100 p-4 rounded-lg shadow">
-          <h3 className="text-sm text-purple-800 font-medium">Ganancia Potencial</h3>
-          <p className="text-2xl font-bold">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(valuation.potentialProfit)}</p>
+        <div className="bg-white border-l-4 border-indigo-500 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
+          <h3 className="text-sm text-gray-500 font-medium uppercase tracking-wide">Ganancia Potencial</h3>
+          <p className="text-2xl font-bold text-gray-800 mt-2">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(valuation.potentialProfit)}</p>
         </div>
-        <div className="bg-amber-100 p-4 rounded-lg shadow">
-          <h3 className="text-sm text-amber-800 font-medium">Margen de Ganancia</h3>
-          <p className="text-2xl font-bold">{valuation.potentialProfitMargin.toFixed(2)}%</p>
+        <div className="bg-white border-l-4 border-gray-500 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
+          <h3 className="text-sm text-gray-500 font-medium uppercase tracking-wide">Margen de Ganancia</h3>
+          <p className="text-2xl font-bold text-gray-800 mt-2">{valuation.potentialProfitMargin.toFixed(2)}%</p>
         </div>
       </div>
 
       {/* Tabla de productos */}
       {loading ? (
-        <div className="text-center py-10">
-          <p className="text-gray-600">Cargando productos...</p>
+        <div className="text-center py-20 bg-white rounded-xl shadow-md border border-gray-100">
+          <div className="animate-pulse flex flex-col items-center">
+            <div className="h-8 w-8 mb-4 rounded-full bg-indigo-200"></div>
+            <p className="text-gray-600 font-medium">Cargando productos...</p>
+          </div>
         </div>
       ) : error ? (
-        <div className="bg-red-100 text-red-700 p-4 rounded">
-          <p>{error}</p>
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-6 rounded-xl shadow-md">
+          <div className="flex items-center gap-3">
+            <span className="text-red-500 text-2xl">⚠️</span>
+            <p className="font-medium">{error}</p>
+          </div>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto bg-white rounded-lg shadow">
+          <div className="overflow-x-auto bg-white rounded-xl shadow-md border border-gray-100">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Costo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Venta</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Costo</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Venta</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -371,50 +392,54 @@ function Inventory() {
                 ) : (
                   products.map(product => (
                     <tr key={product.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">{product.sku}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.sku}</td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="font-medium text-gray-900">{product.name}</span>
+                          <span className="font-semibold text-gray-900">{product.name}</span>
                           {product.description && (
-                            <span className="text-sm text-gray-500">{product.description}</span>
+                            <span className="text-sm text-gray-500 mt-1 line-clamp-2">{product.description}</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">{product.category.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{product.category.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <span className={`px-2 py-1 rounded ${
+                          <span className={`px-3 py-1.5 rounded-full font-medium ${
                             product.stock <= product.minimumStock
                               ? 'bg-red-100 text-red-800'
                               : product.stock <= product.minimumStock * 1.5
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-green-100 text-green-800'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-emerald-100 text-emerald-800'
                           }`}>
                             {product.stock}
                           </span>
                           {product.stock <= product.minimumStock && (
-                            <span className="ml-2 text-red-500 text-xs">⚠️ Bajo</span>
+                            <span className="ml-2 text-red-500 text-xs font-medium">⚠️ Bajo</span>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(product.costPrice)}
+                        <span className="text-gray-700 font-medium">
+                          {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(product.costPrice)}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(product.sellingPrice)}
+                        <span className="text-gray-900 font-semibold">
+                          {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(product.sellingPrice)}
+                        </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex space-x-2">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-3">
                           <button
                             onClick={() => handleStockMovement(product.id, 'entrada', 1)}
-                            className="text-green-600 hover:text-green-900"
+                            className="p-1.5 bg-emerald-100 rounded-md text-emerald-700 hover:bg-emerald-200 transition-colors duration-200"
                             title="Agregar 1 unidad"
                           >
                             +1
                           </button>
                           <button
                             onClick={() => handleStockMovement(product.id, 'salida', 1)}
-                            className="text-red-600 hover:text-red-900"
+                            className={`p-1.5 rounded-md transition-colors duration-200 ${product.stock < 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
                             title="Restar 1 unidad"
                             disabled={product.stock < 1}
                           >
@@ -422,15 +447,15 @@ function Inventory() {
                           </button>
                           <Link
                             to={`/products/${product.id}`}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="p-1.5 bg-indigo-100 rounded-md text-indigo-700 hover:bg-indigo-200 transition-colors duration-200 flex items-center"
                           >
-                            Editar
+                            <RiEditLine className="text-lg" />
                           </Link>
                           <button
                             onClick={() => handleDeleteProduct(product.id, product.name)}
-                            className="text-red-600 hover:text-red-900"
+                            className="p-1.5 bg-red-100 rounded-md text-red-700 hover:bg-red-200 transition-colors duration-200 flex items-center"
                           >
-                            Eliminar
+                            <RiDeleteBin6Line className="text-lg" />
                           </button>
                         </div>
                       </td>
@@ -442,32 +467,32 @@ function Inventory() {
           </div>
 
           {/* Paginación */}
-          <div className="flex justify-between items-center mt-6">
-            <p className="text-sm text-gray-700">
+          <div className="flex justify-between items-center mt-8">
+            <p className="text-sm text-gray-600 font-medium">
               Mostrando página {currentPage} de {totalPages}
             </p>
-            <div className="flex space-x-2">
+            <div className="flex space-x-3">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className={`px-3 py-1 border rounded ${
+                className={`px-4 py-2 border rounded-lg flex items-center gap-1 transition-all duration-200 ${
                   currentPage === 1 
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                  : 'bg-white text-blue-600 hover:bg-blue-50'
+                  ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed' 
+                  : 'bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300'
                 }`}
               >
-                Anterior
+                <RiArrowLeftSLine className="text-lg" /> Anterior
               </button>
               <button
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className={`px-3 py-1 border rounded ${
+                className={`px-4 py-2 border rounded-lg flex items-center gap-1 transition-all duration-200 ${
                   currentPage === totalPages 
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                  : 'bg-white text-blue-600 hover:bg-blue-50'
+                  ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed' 
+                  : 'bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300'
                 }`}
               >
-                Siguiente
+                Siguiente <RiArrowRightSLine className="text-lg" />
               </button>
             </div>
           </div>
