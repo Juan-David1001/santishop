@@ -1,0 +1,252 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id                Int               @id @default(autoincrement())
+  name              String
+  username          String            @unique
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  sales             Sale[]
+  shifts            Shift[]
+  supplierPayments  SupplierPayment[]
+  products          Product[]         // Relación con productos (creador/responsable)
+  purchases         Purchase[]        // Relación con compras realizadas
+}
+
+model Shift {
+  id            Int               @id @default(autoincrement())
+  userId        Int
+  user          User              @relation(fields: [userId], references: [id])
+  startTime     DateTime          @default(now())
+  endTime       DateTime?
+  isActive      Boolean           @default(true)
+  shiftClosure  ShiftClosure?
+  sales         Sale[]
+  supplierPayments SupplierPayment[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model ShiftClosure {
+  id                 Int     @id @default(autoincrement())
+  shiftId            Int     @unique
+  shift              Shift   @relation(fields: [shiftId], references: [id])
+  expectedAmount     Float
+  actualAmount       Float
+  difference         Float
+  cashInRegister     Float
+  transferAmount     Float
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Sale {
+  id              Int            @id @default(autoincrement())
+  amount          Float
+  subtotal        Float
+  tax             Float          @default(0)
+  discount        Float          @default(0)
+  userId          Int?
+  user            User?          @relation(fields: [userId], references: [id])
+  shiftId         Int?
+  shift           Shift?         @relation(fields: [shiftId], references: [id])
+  clientId        Int?
+  client          Client?        @relation(fields: [clientId], references: [id])
+  pointsEarned    Int            @default(0)
+  pointsRedeemed  Int            @default(0)
+  notes           String?
+  status          String         @default("completed") // completed, cancelled, refunded
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  saleItems       SaleItem[]
+  payments        PaymentMethod[]
+}
+
+model SaleItem {
+  id          Int      @id @default(autoincrement())
+  saleId      Int
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId   Int
+  product     Product  @relation(fields: [productId], references: [id])
+  quantity    Int
+  unitPrice   Float
+  totalPrice  Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SupplierPayment {
+  id          Int       @id @default(autoincrement())
+  amount      Float
+  supplierId  Int
+  supplier    Supplier  @relation(fields: [supplierId], references: [id])
+  description String?
+  userId      Int?
+  user        User?     @relation(fields: [userId], references: [id])
+  shiftId     Int?
+  shift       Shift?    @relation(fields: [shiftId], references: [id])
+  purchaseId  Int?
+  purchase    Purchase? @relation(fields: [purchaseId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Modelos para clientes y puntos
+
+model Client {
+  id              Int       @id @default(autoincrement())
+  name            String
+  email           String?
+  phone           String?
+  document        String?   // DNI, RFC, etc.
+  address         String?
+  totalPoints     Int       @default(0)
+  usedPoints      Int       @default(0)
+  totalSpent      Float     @default(0)
+  lastVisit       DateTime?
+  sales           Sale[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([document])
+  @@index([phone])
+  @@index([email])
+}
+
+model PaymentMethod {
+  id              Int       @id @default(autoincrement())
+  saleId          Int
+  sale            Sale      @relation(fields: [saleId], references: [id])
+  type            String    // efectivo, tarjeta, transferencia, puntos, otro
+  amount          Float     // Monto pagado con este método
+  reference       String?   // Referencia de pago (ej: últimos 4 dígitos de tarjeta)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Nuevos modelos para el sistema de inventario
+
+model Product {
+  id              Int       @id @default(autoincrement())
+  sku             String    @unique
+  name            String
+  description     String?
+  costPrice       Float     // Costo unitario
+  sellingPrice    Float     // Precio venta
+  stock           Int       @default(0)
+  minimumStock    Int       @default(5) // Stock mínimo para alerta
+  categoryId      Int
+  category        Category  @relation(fields: [categoryId], references: [id])
+  userId          Int?      // Usuario que creó/es responsable del producto
+  user            User?     @relation(fields: [userId], references: [id])
+  saleItems       SaleItem[]
+  stockMovements  StockMovement[]
+  purchaseItems   PurchaseItem[]
+  barcode         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([categoryId])
+  @@index([sku])
+  @@index([barcode])
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model StockMovement {
+  id          Int       @id @default(autoincrement())
+  productId   Int
+  product     Product   @relation(fields: [productId], references: [id])
+  quantity    Int       // Positivo para entradas, negativo para salidas
+  type        String    // "entrada", "salida", "ajuste", "venta", "compra"
+  reference   String?   // Referencia al documento origen (ej: número de factura)
+  notes       String?
+  purchaseId  Int?      // Relación opcional con una compra
+  purchase    Purchase? @relation(fields: [purchaseId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([productId])
+  @@index([type])
+  @@index([purchaseId])
+}
+
+// Modelos para proveedores y compras
+
+model Supplier {
+  id              Int              @id @default(autoincrement())
+  name            String
+  contactName     String?
+  phone           String?
+  email           String?
+  address         String?
+  taxId           String?          // RFC, NIT, etc.
+  balance         Float            @default(0)   // Saldo pendiente por pagar
+  notes           String?
+  status          String           @default("active") // active, inactive
+  purchases       Purchase[]
+  payments        SupplierPayment[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  @@index([name])
+  @@index([taxId])
+}
+
+model Purchase {
+  id              Int              @id @default(autoincrement())
+  supplierId      Int
+  supplier        Supplier         @relation(fields: [supplierId], references: [id])
+  userId          Int
+  user            User             @relation(fields: [userId], references: [id])
+  invoiceNumber   String?
+  totalAmount     Float
+  paidAmount      Float            @default(0)
+  status          String           @default("pending") // pending, partially_paid, paid
+  notes           String?
+  purchaseDate    DateTime         @default(now())
+  dueDate         DateTime?        // Fecha límite de pago
+  purchaseItems   PurchaseItem[]
+  stockMovements  StockMovement[]
+  payments        SupplierPayment[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  @@index([supplierId])
+  @@index([userId])
+  @@index([status])
+}
+
+model PurchaseItem {
+  id          Int       @id @default(autoincrement())
+  purchaseId  Int
+  purchase    Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId   Int
+  product     Product   @relation(fields: [productId], references: [id])
+  quantity    Int
+  unitCost    Float
+  totalCost   Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([purchaseId])
+  @@index([productId])
+}
