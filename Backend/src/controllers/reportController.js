@@ -470,10 +470,11 @@ const getGeneralBalance = async (req, res) => {
     const saleItems = await prisma.saleItem.findMany({
       include: {
         product: true,
+        sale: true
+      },
+      where: {
         sale: {
-          where: {
-            status: 'completed'
-          }
+          status: 'completed'
         }
       }
     });

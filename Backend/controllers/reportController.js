@@ -315,7 +315,7 @@ async function getPaymentStatus(req, res) {
  */
 async function getGeneralBalance(req, res) {
   try {
-    // Obtener valor total del inventario
+    // Obtener valor total del inventario (precio unitario)
     const inventoryValue = await prisma.product.aggregate({
       _sum: {
         costPrice: true,
@@ -326,13 +326,20 @@ async function getGeneralBalance(req, res) {
       }
     });
 
-    // Calcular el valor del inventario a precio de costo
-    const stockValue = await prisma.product.aggregate({
-      _sum: {
-        costPriceTotal: true,
-        sellingPriceTotal: true
+    // Obtener productos para calcular valores totales por stock
+    const products = await prisma.product.findMany({
+      select: {
+        costPrice: true,
+        sellingPrice: true,
+        stock: true
       }
     });
+    
+    // Calcular valor total considerando el stock
+    const stockValue = {
+      costPriceTotal: products.reduce((sum, product) => sum + (product.costPrice * product.stock), 0),
+      sellingPriceTotal: products.reduce((sum, product) => sum + (product.sellingPrice * product.stock), 0)
+    };
     
     // Ventas totales y ganancias
     const salesData = await prisma.sale.aggregate({
@@ -365,9 +372,9 @@ async function getGeneralBalance(req, res) {
     const balance = {
       inventory: {
         count: inventoryValue._count.id,
-        value: stockValue._sum.costPriceTotal || 0,
-        retailValue: stockValue._sum.sellingPriceTotal || 0,
-        potentialProfit: (stockValue._sum.sellingPriceTotal || 0) - (stockValue._sum.costPriceTotal || 0),
+        value: stockValue.costPriceTotal || 0,
+        retailValue: stockValue.sellingPriceTotal || 0,
+        potentialProfit: (stockValue.sellingPriceTotal || 0) - (stockValue.costPriceTotal || 0),
       },
       sales: {
         count: salesData._count.id,
@@ -382,7 +389,7 @@ async function getGeneralBalance(req, res) {
       },
       summary: {
         // Patrimonio neto = (Ventas + Valor inventario) - Deudas
-        netWorth: ((salesData._sum.total || 0) + (stockValue._sum.costPriceTotal || 0)) - totalDebt
+        netWorth: ((salesData._sum.total || 0) + (stockValue.costPriceTotal || 0)) - totalDebt
       }
     };
 
