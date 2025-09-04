@@ -211,11 +211,112 @@ const getShiftClosures = async (req, res) => {
   }
 };
 
+/**
+ * Obtiene los totales de ventas para un turno específico
+ */
+const getShiftTotals = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ error: 'Se requiere el ID del turno' });
+    }
+    
+    // Verificar que el turno existe
+    const shift = await prisma.shift.findUnique({
+      where: { id: parseInt(id) }
+    });
+    
+    if (!shift) {
+      return res.status(404).json({ error: 'Turno no encontrado' });
+    }
+    
+    // Obtener todas las ventas del turno
+    const shiftSales = await prisma.sale.findMany({
+      where: { shiftId: parseInt(id) },
+      include: {
+        payments: true
+      }
+    });
+    
+    // Calcular montos por método de pago
+    let cashTotal = 0;
+    let transferTotal = 0;
+    let cardTotal = 0;
+    let pointsTotal = 0;
+    let otherTotal = 0;
+    
+    shiftSales.forEach(sale => {
+      // Si tiene pagos registrados, usar esos datos
+      if (sale.payments && sale.payments.length > 0) {
+        sale.payments.forEach(payment => {
+          const amount = parseFloat(payment.amount) || 0;
+          switch(payment.type) {
+            case 'efectivo':
+              cashTotal += amount;
+              break;
+            case 'transferencia':
+              transferTotal += amount;
+              break;
+            case 'tarjeta':
+              cardTotal += amount;
+              break;
+            case 'puntos':
+              pointsTotal += amount;
+              break;
+            default:
+              otherTotal += amount;
+          }
+        });
+      } else {
+        // Para compatibilidad con ventas antiguas que no tienen payments
+        const amount = parseFloat(sale.amount) || 0;
+        if (sale.paymentMethod === 'transferencia') {
+          transferTotal += amount;
+        } else if (sale.paymentMethod === 'tarjeta') {
+          cardTotal += amount;
+        } else if (sale.paymentMethod === 'puntos') {
+          pointsTotal += amount;
+        } else if (sale.paymentMethod === 'otro') {
+          otherTotal += amount;
+        } else {
+          // Por defecto asumimos efectivo
+          cashTotal += amount;
+        }
+      }
+    });
+    
+    // Calculamos el total sumando todos los métodos
+    const total = cashTotal + transferTotal + cardTotal + pointsTotal + otherTotal;
+    
+    res.json({
+      shiftId: parseInt(id),
+      salesCount: shiftSales.length,
+      total,
+      cashTotal,
+      transferTotal,
+      cardTotal,
+      pointsTotal,
+      otherTotal,
+      paymentMethods: {
+        efectivo: cashTotal,
+        transferencia: transferTotal,
+        tarjeta: cardTotal,
+        puntos: pointsTotal,
+        otro: otherTotal
+      }
+    });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
 module.exports = {
   getShifts,
   getActiveShifts,
   startShift,
   endShift,
   createShiftClosure,
-  getShiftClosures
+  getShiftClosures,
+  getShiftTotals
 };

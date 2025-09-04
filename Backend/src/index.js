@@ -16,13 +16,18 @@ const clientRoutes = require('./routes/clientRoutes');
 const supplierRoutes = require('./routes/supplierRoutes');
 const purchaseRoutes = require('./routes/purchaseRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const healthRoutes = require('./routes/healthRoutes');
 
 // Inicializar Express app
 const app = express();
 const PORT = config.port;
 
 // Middleware global
-app.use(cors());
+app.use(cors({
+  origin: '*', // Permite conexiones desde cualquier origen
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Rutas para el sistema de inventario
@@ -39,6 +44,7 @@ app.use('/api/clients', clientRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/health-check', healthRoutes);
 
 // Middleware de manejo de errores
 app.use(errorHandler);

@@ -109,7 +109,7 @@ async function sendClosureEmail(closure, sales, shiftDetails) {
     
     const mailOptions = {
       from: config.emailConfig.auth.user,
-      to: '165dario@gmail.com',
+      to: 'david28.jdo@gmail.com',
       subject: `Resumen de Cierre de Caja #${closure.id} - ${formatDate(closure.createdAt)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">

@@ -106,36 +106,59 @@ function ShiftManagement() {
 
   const prepareForClosure = async (shiftId) => {
     try {
-      // Obtener el total de ventas para este turno
+      toast.loading('Calculando totales para el cierre de caja...', { id: 'totals-toast' });
+      
+      // Usar el nuevo endpoint para obtener los totales del turno
       const response = await apiClient.get(`/shifts/${shiftId}/totals`);
       
       // Si la API devuelve los totales
       if (response.data && typeof response.data.total !== 'undefined') {
+        console.log('Totales obtenidos del endpoint /shifts/:id/totals:', response.data);
+        
+        // Extraer los totales específicos para cada método de pago
+        const { 
+          total, 
+          cashTotal, 
+          transferTotal,
+          cardTotal,
+          pointsTotal,
+          otherTotal
+        } = response.data;
+        
+        // Establecer los datos para el cierre de caja
         setClosureData({
           shiftId,
-          actualAmount: response.data.total.toString(), // Total esperado basado en las ventas
-          cashInRegister: '',
-          transferAmount: response.data.transferTotal ? response.data.transferTotal.toString() : '0',
-          notes: ''
+          actualAmount: total.toString(), // Total esperado basado en todas las ventas
+          cashInRegister: cashTotal ? cashTotal.toString() : '',
+          transferAmount: transferTotal ? transferTotal.toString() : '0',
+          notes: `Desglose de ventas: \nEfectivo: ${cashTotal || 0}\nTransferencias: ${transferTotal || 0}\nTarjeta: ${cardTotal || 0}\nPuntos: ${pointsTotal || 0}\nOtros: ${otherTotal || 0}`
+        });
+        
+        toast.success('Totales calculados correctamente', {
+          id: 'totals-toast',
+          duration: 3000
         });
       } else {
-        // Si la API no devuelve totales, inicializar con valores vacíos
+        // Si la API no devuelve totales en el formato esperado
+        console.error('El endpoint devolvió una respuesta sin la estructura esperada:', response.data);
+        toast.error('Error al calcular los totales. Formato de respuesta inesperado.', { id: 'totals-toast' });
+        
+        // Inicializar con valores vacíos
         setClosureData({
           shiftId,
           actualAmount: '',
           cashInRegister: '',
           transferAmount: '',
-          notes: ''
+          notes: 'Error al calcular los totales automáticamente. Por favor, revise los montos manualmente.'
         });
       }
     } catch (err) {
       console.error('Error al obtener totales del turno:', err);
+      toast.error('Error al calcular los totales. Intentando método alternativo...', { id: 'totals-toast' });
       
       // Método alternativo: obtener ventas filtradas por el turno y calcular manualmente
       try {
-        // Intentar obtener todas las ventas y filtrar manualmente por el turno para mayor seguridad
-        console.log('Intentando obtener ventas para el turno ID:', shiftId);
-        
+        // Intentar obtener todas las ventas filtradas por el turno
         const salesResponse = await apiClient.get('/sales', { 
           params: { 
             fullLoad: true, // Cargar todas las ventas
@@ -143,255 +166,132 @@ function ShiftManagement() {
           } 
         });
         
-        // Depurar la estructura de la respuesta
         console.log('Respuesta de ventas:', salesResponse.data);
         
-        let total = 0;
-        let transferTotal = 0;
+        let totalEfectivo = 0;
+        let totalTransferencia = 0;
+        let totalTarjeta = 0;
+        let totalPuntos = 0;
+        let totalOtro = 0;
         let salesProcessed = 0;
         
+        // Función para procesar cada venta y calcular totales por método de pago
         const processSale = (sale) => {
-          // Log para ver cada venta que se está procesando
-          console.log('Procesando venta:', sale);
-          
-          // Convertir ambos a string para comparación segura
-          const saleShiftId = String(sale.shiftId || '');
-          const currentShiftId = String(shiftId || '');
-          
           // Verificar si la venta pertenece al turno actual
-          // SOLUCIÓN TEMPORAL: considerar ventas sin turno asignado (shiftId null o vacío) como pertenecientes al turno actual
-          const belongsToShift = saleShiftId === currentShiftId || !sale.shiftId;
-          console.log(`Venta ${sale.id || 'N/A'} - ShiftId: ${saleShiftId}, Turno actual: ${currentShiftId}, ¿Pertenece?: ${belongsToShift}`);
-          
-          if (belongsToShift) {
-            const amount = parseFloat(sale.amount || 0);
-            total += amount;
-            if (sale.paymentMethod === 'transferencia') {
-              transferTotal += amount;
-            }
+          if (sale.shiftId === parseInt(shiftId) || String(sale.shiftId) === String(shiftId)) {
             salesProcessed++;
-            console.log(`Venta ${sale.id} agregada al total. Monto: ${amount}, Método: ${sale.paymentMethod}`);
+            
+            // Si la venta tiene pagos detallados, procesar cada uno
+            if (sale.payments && sale.payments.length > 0) {
+              sale.payments.forEach(payment => {
+                const amount = parseFloat(payment.amount || 0);
+                switch(payment.type) {
+                  case 'efectivo':
+                    totalEfectivo += amount;
+                    break;
+                  case 'transferencia':
+                    totalTransferencia += amount;
+                    break;
+                  case 'tarjeta':
+                    totalTarjeta += amount;
+                    break;
+                  case 'puntos':
+                    totalPuntos += amount;
+                    break;
+                  default:
+                    totalOtro += amount;
+                }
+              });
+            } else {
+              // Para ventas antiguas que no tienen payments detallados
+              const amount = parseFloat(sale.amount || 0);
+              switch(sale.paymentMethod) {
+                case 'transferencia':
+                  totalTransferencia += amount;
+                  break;
+                case 'tarjeta':
+                  totalTarjeta += amount;
+                  break;
+                case 'puntos':
+                  totalPuntos += amount;
+                  break;
+                case 'otro':
+                  totalOtro += amount;
+                  break;
+                default:
+                  // Por defecto asumimos efectivo
+                  totalEfectivo += amount;
+              }
+            }
           }
         };
         
         // Procesar las ventas para obtener totales
-        if (salesResponse.data && salesResponse.data.sales) {
-          // Nuevo formato de respuesta
-          console.log('Procesando nuevo formato de respuesta con salesResponse.data.sales');
+        if (salesResponse.data && salesResponse.data.sales && Array.isArray(salesResponse.data.sales)) {
           salesResponse.data.sales.forEach(processSale);
         } else if (salesResponse.data && Array.isArray(salesResponse.data)) {
-          // Formato antiguo por compatibilidad
-          console.log('Procesando formato antiguo de respuesta con array');
           salesResponse.data.forEach(processSale);
-        } else {
-          // Si la estructura no coincide con lo esperado
-          console.log('Formato de respuesta no reconocido:', salesResponse.data);
         }
         
-        console.log(`Procesadas ${salesProcessed} ventas para el turno ${shiftId}`);
+        // Calcular el total general sumando todos los métodos de pago
+        const totalGeneral = totalEfectivo + totalTransferencia + totalTarjeta + totalPuntos + totalOtro;
         
-        // Usar los totales calculados
-        console.log('Totales calculados en primer intento:', { total, transferTotal });
+        console.log('Totales calculados manualmente:', { 
+          totalGeneral, 
+          totalEfectivo, 
+          totalTransferencia,
+          totalTarjeta,
+          totalPuntos,
+          totalOtro,
+          salesProcessed
+        });
         
         if (salesProcessed > 0) {
+          // Usar los totales calculados
           setClosureData({
             shiftId,
-            actualAmount: total ? total.toString() : '0',
-            cashInRegister: '',
-            transferAmount: transferTotal ? transferTotal.toString() : '0',
-            notes: ''
+            actualAmount: totalGeneral.toString(),
+            cashInRegister: totalEfectivo.toString(),
+            transferAmount: totalTransferencia.toString(),
+            notes: `Cálculo manual - Ventas procesadas: ${salesProcessed}\nEfectivo: ${totalEfectivo}\nTransferencias: ${totalTransferencia}\nTarjeta: ${totalTarjeta}\nPuntos: ${totalPuntos}\nOtros: ${totalOtro}`
           });
           
-          toast.success('Totales calculados a partir de las ventas del turno');
-          
-          // Advertir al usuario que se están incluyendo ventas sin turno asignado
-          toast.success('ATENCIÓN: Se incluyeron ventas sin turno asignado', {
-            duration: 6000,
-            icon: '⚠️'
+          toast.success('Totales calculados correctamente', {
+            id: 'totals-toast',
+            duration: 3000
           });
         } else {
-          console.log('No se encontraron ventas para el turno en el primer intento');
-          // En lugar de lanzar un error, continuamos con el flujo para probar el segundo método
+          // No se encontraron ventas asociadas a este turno
           setClosureData({
             shiftId,
             actualAmount: '0',
             cashInRegister: '',
             transferAmount: '0',
-            notes: ''
+            notes: 'No se encontraron ventas asociadas a este turno.'
+          });
+          
+          toast.error('No se encontraron ventas para este turno', {
+            id: 'totals-toast',
+            duration: 3000
           });
         }
       } catch (fallbackErr) {
-        console.error('Error en el primer método alternativo para calcular totales:', fallbackErr);
-        
-        // Segundo intento: obtener todas las ventas sin filtro y filtrar manualmente
-        try {
-          console.log('Segundo intento: obteniendo todas las ventas sin filtro');
-          const allSalesResponse = await apiClient.get('/sales', { params: { fullLoad: true } });
-          
-          console.log('Todas las ventas obtenidas:', allSalesResponse.data);
-          
-          let total = 0;
-          let transferTotal = 0;
-          let salesProcessed = 0;
-          
-          const processSale = (sale) => {
-            // Log para ver cada venta que se está procesando en el segundo intento
-            console.log('Segundo intento - Procesando venta:', sale);
-            
-            // Convertir ambos a string para comparación segura
-            const saleShiftId = String(sale.shiftId || '');
-            const currentShiftId = String(shiftId || '');
-            
-            // Verificar si la venta pertenece al turno actual
-            // SOLUCIÓN TEMPORAL: considerar ventas sin turno asignado (shiftId null o vacío) como pertenecientes al turno actual
-            const belongsToShift = saleShiftId === currentShiftId || !sale.shiftId;
-            console.log(`Segundo intento - Venta ${sale.id || 'N/A'} - ShiftId: ${saleShiftId}, Turno actual: ${currentShiftId}, ¿Pertenece?: ${belongsToShift}`);
-            
-            if (belongsToShift) {
-              const amount = parseFloat(sale.amount || 0);
-              total += amount;
-              if (sale.paymentMethod === 'transferencia') {
-                transferTotal += amount;
-              }
-              salesProcessed++;
-              console.log(`Segundo intento - Venta ${sale.id} agregada al total. Monto: ${amount}, Método: ${sale.paymentMethod}`);
-            }
-          };
-          
-          // Procesar todas las ventas
-          if (allSalesResponse.data && allSalesResponse.data.sales) {
-            allSalesResponse.data.sales.forEach(processSale);
-          } else if (allSalesResponse.data && Array.isArray(allSalesResponse.data)) {
-            allSalesResponse.data.forEach(processSale);
-          }
-          
-          console.log(`Segundo intento: procesadas ${salesProcessed} ventas para el turno ${shiftId}`);
-          
-          if (salesProcessed > 0) {
-            // Usar los totales calculados
-            console.log('Totales calculados en segundo intento:', { total, transferTotal });
-            
-            setClosureData({
-              shiftId,
-              actualAmount: total ? total.toString() : '0',
-              cashInRegister: '',
-              transferAmount: transferTotal ? transferTotal.toString() : '0',
-              notes: 'NOTA: Se incluyeron ventas sin turno asignado. Por favor verifica los totales.'
-            });
-            
-            toast.success('Totales calculados correctamente');
-            
-            // Advertir al usuario que se están incluyendo ventas sin turno asignado
-            toast.success('ATENCIÓN: Se incluyeron ventas sin asignación específica de turno', {
-              duration: 6000,
-              icon: '⚠️'
-            });
-            return; // Salir de la función si se han calculado correctamente los totales
-          } else {
-            console.log('No se encontraron ventas para el turno en el segundo intento');
-          }
-        } catch (secondFallbackErr) {
-          console.error('Error en el segundo método alternativo:', secondFallbackErr);
-          
-          // Tercer intento: intentar con un endpoint específico para el turno y sus ventas
-          try {
-            console.log('Tercer intento: obteniendo ventas directamente del turno');
-            const shiftResponse = await apiClient.get(`/shifts/${shiftId}`);
-            
-            console.log('Datos del turno obtenidos:', shiftResponse.data);
-            
-            // Verificar si el turno tiene ventas asociadas directamente
-            if (shiftResponse.data && shiftResponse.data.sales && Array.isArray(shiftResponse.data.sales)) {
-              console.log(`Tercer intento: el turno tiene ${shiftResponse.data.sales.length} ventas asociadas`);
-              
-              let total = 0;
-              let transferTotal = 0;
-              
-              shiftResponse.data.sales.forEach(sale => {
-                const amount = parseFloat(sale.amount || 0);
-                total += amount;
-                if (sale.paymentMethod === 'transferencia') {
-                  transferTotal += amount;
-                }
-              });
-              
-              console.log('Totales calculados en tercer intento:', { total, transferTotal });
-              
-              setClosureData({
-                shiftId,
-                actualAmount: total ? total.toString() : '0',
-                cashInRegister: '',
-                transferAmount: transferTotal ? transferTotal.toString() : '0',
-                notes: ''
-              });
-              
-              toast.success('Totales calculados a partir de las ventas del turno');
-              return; // Salir de la función si se han calculado correctamente los totales
-            } else {
-              console.log('El turno no tiene ventas asociadas directamente');
-            }
-          } catch (thirdFallbackErr) {
-            console.error('Error en el tercer método alternativo:', thirdFallbackErr);
-            
-            // Cuarto intento: intento más agresivo para encontrar ventas
-            try {
-              console.log('Cuarto intento: depuración completa de todas las ventas');
-              
-              // Obtener absolutamente todas las ventas sin filtros
-              const allSalesResponse = await apiClient.get('/sales');
-              
-              console.log('Todas las ventas sin filtro:', allSalesResponse.data);
-              
-              // Imprimir información detallada de cada venta para depuración
-              if (allSalesResponse.data) {
-                const salesArray = Array.isArray(allSalesResponse.data) 
-                  ? allSalesResponse.data 
-                  : (allSalesResponse.data.sales || []);
-                
-                console.log(`Total de ventas en el sistema: ${salesArray.length}`);
-                
-                console.log('Lista de todas las ventas:');
-                salesArray.forEach((sale, index) => {
-                  console.log(`Venta #${index + 1}:`);
-                  console.log('  ID:', sale.id);
-                  console.log('  Monto:', sale.amount);
-                  console.log('  Método de pago:', sale.paymentMethod);
-                  console.log('  ShiftId:', sale.shiftId);
-                  console.log('  Fecha de creación:', sale.createdAt);
-                });
-                
-                // Contar ventas por turno
-                const salesByShift = {};
-                salesArray.forEach(sale => {
-                  const shiftIdKey = String(sale.shiftId || 'sin_turno');
-                  salesByShift[shiftIdKey] = (salesByShift[shiftIdKey] || 0) + 1;
-                });
-                
-                console.log('Distribución de ventas por turno:', salesByShift);
-              }
-            } catch (finalError) {
-              console.error('Error en el intento final de depuración:', finalError);
-            }
-          }
-        }
+        console.error('Error en el método alternativo para calcular totales:', fallbackErr);
+        toast.error('Error al calcular los totales. Por favor, introduce los valores manualmente.', { id: 'totals-toast' });
         
         // Si todos los métodos fallan, inicializar con valores predeterminados
         setClosureData({
           shiftId,
-          actualAmount: '0', // Usar 0 en lugar de vacío para mejor experiencia de usuario
+          actualAmount: '0',
           cashInRegister: '',
           transferAmount: '0',
-          notes: 'No se encontraron ventas asociadas a este turno.'
-        });
-        toast.error('No se encontraron ventas para este turno', {
-          duration: 4000
+          notes: 'Error al calcular totales automáticamente. Por favor, introduce los valores manualmente.'
         });
       }
     }
     
-    // Asegurándonos de que el formulario de cierre se muestre incluso si hubo errores
+    // Mostrar el formulario de cierre
     setShowClosureForm(true);
-    console.log('Modal de cierre de turno activada');
   };
 
   const handleCreateClosure = async (e) => {
@@ -405,6 +305,7 @@ function ShiftManagement() {
     try {
       toast.loading('Procesando cierre de caja y enviando reporte por correo...', { id: 'cierre-toast' });
       
+      // Crear el cierre de caja
       await apiClient.post(`/shifts/${closureData.shiftId}/closure`, {
         actualAmount: parseFloat(closureData.actualAmount),
         cashInRegister: parseFloat(closureData.cashInRegister),
@@ -416,6 +317,18 @@ function ShiftManagement() {
         id: 'cierre-toast',
         duration: 5000
       });
+      
+      // Finalizar automáticamente el turno
+      try {
+        await apiClient.post(`/shifts/${closureData.shiftId}/end`);
+        toast.success('Turno finalizado automáticamente.', {
+          duration: 3000
+        });
+      } catch (endShiftErr) {
+        console.error('Error al finalizar turno automáticamente:', endShiftErr);
+        toast.error('No se pudo finalizar el turno automáticamente. Por favor, finalícelo manualmente.');
+      }
+      
       setShowClosureForm(false);
       loadShifts();
     } catch (err) {

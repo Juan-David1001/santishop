@@ -33,4 +33,10 @@ router.post('/:id/closure',
 // Obtener cierres de caja
 router.get('/closures', asyncHandler(shiftController.getShiftClosures));
 
+// Obtener totales de ventas para un turno específico
+router.get('/:id/totals', 
+  validateIdParams(['id']),
+  asyncHandler(shiftController.getShiftTotals)
+);
+
 module.exports = router;

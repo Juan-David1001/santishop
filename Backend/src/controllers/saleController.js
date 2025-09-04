@@ -410,6 +410,7 @@ const getSaleById = async (req, res) => {
       include: {
         user: true,
         shift: true,
+        client: true,
         saleItems: {
           include: {
             product: true

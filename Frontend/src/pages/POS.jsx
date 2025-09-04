@@ -47,6 +47,7 @@ const POS = () => {
   useEffect(() => {
     // Cargar usuarios y turnos activos al iniciar
     fetchUsers();
+    fetchActiveShifts();
     
     // Focus en el campo de búsqueda al cargar
     if (searchInputRef.current) {
@@ -93,14 +94,53 @@ const POS = () => {
     try {
       const response = await apiClient.get('/users');
       setUsers(response.data);
-      
-      // Seleccionar el primer usuario por defecto
-      if (response.data.length > 0) {
-        setSelectedUser(response.data[0]);
-      }
     } catch (error) {
       toast.error('Error al cargar usuarios');
       console.error('Error loading users:', error);
+    }
+  };
+
+  const fetchActiveShifts = async () => {
+    try {
+      const response = await apiClient.get('/shifts/active');
+      if (response.data && response.data.length > 0) {
+        // Encontró turnos activos
+        const activeShift = response.data[0];
+        setActiveShift(activeShift);
+        
+        // Seleccionar automáticamente el usuario del primer turno activo
+        if (activeShift.user) {
+          setSelectedUser(activeShift.user);
+        } else {
+          // Si por alguna razón el turno no tiene usuario asociado
+          const userId = activeShift.userId;
+          const userResponse = await apiClient.get(`/users/${userId}`);
+          if (userResponse.data) {
+            setSelectedUser(userResponse.data);
+          }
+        }
+      } else {
+        setActiveShift(null);
+        // Seleccionar el primer usuario por defecto, aunque no tenga turno activo
+        const userResponse = await apiClient.get('/users');
+        if (userResponse.data && userResponse.data.length > 0) {
+          setSelectedUser(userResponse.data[0]);
+        }
+        toast.error('No hay turnos activos para ningún usuario');
+      }
+    } catch (error) {
+      toast.error('Error al verificar turnos activos');
+      console.error('Error checking active shifts:', error);
+      
+      // En caso de error, intentar cargar al menos un usuario
+      try {
+        const userResponse = await apiClient.get('/users');
+        if (userResponse.data && userResponse.data.length > 0) {
+          setSelectedUser(userResponse.data[0]);
+        }
+      } catch (userError) {
+        console.error('Error loading default user:', userError);
+      }
     }
   };
 
@@ -593,57 +633,56 @@ const POS = () => {
   };
 
   return (
-    <div className="h-full flex bg-slate-50">
+    <div className="h-full flex flex-col md:flex-row bg-slate-50">
       {/* Panel izquierdo - Búsqueda y carrito */}
-      <div className="w-2/3 p-4 overflow-y-auto animate-fadeIn">
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-4 bg-white p-3 rounded-lg shadow-sm border-l-4 border-blue-500">
-            <MdPointOfSale size={32} className="text-blue-600" />
+      <div className="w-full md:w-2/3 p-2 md:p-4 overflow-y-auto animate-fadeIn">
+        <div className="mb-4 md:mb-6">
+          <div className="flex items-center gap-2 md:gap-3 mb-4 bg-white p-3 rounded-lg shadow-sm border-l-4 border-blue-500">
+            <MdPointOfSale size={24} className="text-blue-600 md:text-3xl" />
             <div>
-              <h2 className="text-2xl font-bold text-slate-800">Punto de Venta</h2>
-              <p className="text-sm text-slate-500">Gestiona ventas y pagos de manera eficiente</p>
+              <h2 className="text-xl md:text-2xl font-bold text-slate-800">Punto de Venta</h2>
+              <p className="text-xs md:text-sm text-slate-500">Gestiona ventas y pagos de manera eficiente</p>
             </div>
           </div>
           
-          {/* Selector de usuario y estado de turno */}
-          <div className="flex items-center mb-6 space-x-6 p-5 bg-white rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition-shadow duration-300 pos-item-hover">
+          {/* Información de usuario y estado de turno */}
+          <div className="flex flex-col sm:flex-row sm:items-center mb-4 sm:mb-6 gap-3 sm:space-x-6 p-3 sm:p-5 bg-white rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition-shadow duration-300 pos-item-hover">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-600 mb-2 flex items-center">
-                <FaUser className="mr-2 text-blue-500" size={14} />
+              <label className="block text-xs sm:text-sm font-medium text-slate-600 mb-1 sm:mb-2 flex items-center">
+                <FaUser className="mr-1.5 sm:mr-2 text-blue-500" size={12} />
                 Usuario:
               </label>
-              <select 
-                className="block w-full px-3 py-2.5 bg-white border border-slate-300 rounded-md shadow-sm focus-ring transition-all"
-                value={selectedUser?.id || ""}
-                onChange={(e) => {
-                  const userId = parseInt(e.target.value);
-                  const user = users.find(u => u.id === userId);
-                  setSelectedUser(user);
-                }}
-              >
-                {users.map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
-              </select>
+              {selectedUser ? (
+                <div className="px-2 sm:px-3 py-2 sm:py-2.5 bg-white border border-slate-300 rounded-md shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                      {selectedUser.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-medium text-sm sm:text-base text-slate-800">{selectedUser.name}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="px-2 sm:px-3 py-1.5 sm:py-2.5 bg-red-50 border border-red-200 rounded-md text-red-800 text-xs sm:text-sm">
+                  No hay usuario seleccionado
+                </div>
+              )}
             </div>
             <div className="flex-1">
-              <p className="block text-sm font-medium text-slate-600 mb-2 flex items-center">
-                <FaRegClock className="mr-2 text-blue-500" size={14} />
+              <p className="block text-xs sm:text-sm font-medium text-slate-600 mb-1 sm:mb-2 flex items-center">
+                <FaRegClock className="mr-1.5 sm:mr-2 text-blue-500" size={12} />
                 Estado del turno:
               </p>
               {activeShift ? (
-                <div className="flex items-center gap-2 mt-2 animate-fadeIn">
-                  <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm w-full justify-center">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+                <div className="flex items-center gap-2 mt-1 sm:mt-2 animate-fadeIn">
+                  <span className="inline-flex items-center px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm w-full justify-center">
+                    <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 mr-1.5 sm:mr-2 animate-pulse"></span>
                     Turno activo #{activeShift.id}
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 mt-2 animate-fadeIn">
-                  <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-800 border border-red-200 shadow-sm w-full justify-center">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 mr-2"></span>
+                <div className="flex items-center gap-2 mt-1 sm:mt-2 animate-fadeIn">
+                  <span className="inline-flex items-center px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-red-100 text-red-800 border border-red-200 shadow-sm w-full justify-center">
+                    <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-red-500 mr-1.5 sm:mr-2"></span>
                     Sin turno activo
                   </span>
                 </div>
@@ -652,130 +691,142 @@ const POS = () => {
           </div>
           
           {/* Búsqueda de productos */}
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <FaSearch className="h-5 w-5 text-blue-500" />
+              <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+                <FaSearch className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
               </div>
               <input
                 type="text"
                 ref={searchInputRef}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar productos por nombre, SKU o código de barras..."
-                className="block w-full pl-12 pr-12 py-4 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-md transition-all"
+                placeholder="Buscar productos por nombre, SKU o código..."
+                className="block w-full pl-10 sm:pl-12 pr-8 sm:pr-12 py-3 sm:py-4 border border-slate-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-md transition-all text-sm sm:text-base"
               />
               {isLoading ? (
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
-                  <svg className="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <div className="absolute inset-y-0 right-0 pr-3 sm:pr-4 flex items-center">
+                  <svg className="animate-spin h-5 w-5 sm:h-6 sm:w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 </div>
               ) : (
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-xs text-slate-500">
-                  <div className="flex items-center gap-1 bg-slate-100 px-2.5 py-1.5 rounded-lg">
+                <div className="absolute inset-y-0 right-0 pr-3 sm:pr-4 flex items-center pointer-events-none text-xs text-slate-500">
+                  <div className="hidden sm:flex items-center gap-1 bg-slate-100 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg">
                     <FaRegLightbulb className="text-amber-500" />
                     <span>Presiona Enter para buscar</span>
+                  </div>
+                  <div className="flex sm:hidden items-center justify-center w-6 h-6 bg-slate-100 rounded-full">
+                    <FaSearch className="text-blue-500" size={10} />
                   </div>
                 </div>
               )}
             </div>
             {searchQuery.length > 0 && searchResults.length === 0 && !isLoading && (
-              <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-100 text-blue-700 text-sm animate-fadeIn flex items-center">
-                <FaSearch className="mr-2" /> Busca por nombre del producto, SKU o código de barras
+              <div className="mt-2 p-2 sm:p-3 bg-blue-50 rounded-lg border border-blue-100 text-blue-700 text-xs sm:text-sm animate-fadeIn flex items-center">
+                <FaSearch className="mr-1.5 sm:mr-2" size={12} /> Busca por nombre, SKU o código de barras
               </div>
             )}
           </div>
           
           {/* Resultados de búsqueda */}
           {searchResults.length > 0 && (
-            <div className="mb-6 bg-white rounded-lg shadow-md max-h-80 overflow-y-auto border border-slate-200 animate-fadeIn">
-              <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 flex items-center">
-                <div className="flex items-center gap-2 text-white">
-                  <MdLocalOffer size={18} />
-                  <h3 className="font-semibold">Productos Encontrados ({searchResults.length})</h3>
+            <div className="mb-4 sm:mb-6 bg-white rounded-lg shadow-md max-h-60 sm:max-h-80 overflow-y-auto border border-slate-200 animate-fadeIn">
+              <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-blue-700 px-3 sm:px-6 py-2 sm:py-3 flex items-center">
+                <div className="flex items-center gap-1.5 sm:gap-2 text-white">
+                  <MdLocalOffer size={16} className="sm:text-lg" />
+                  <h3 className="font-semibold text-sm sm:text-base">Productos Encontrados ({searchResults.length})</h3>
                 </div>
               </div>
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50 sticky top-12 z-10 shadow-sm">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Producto</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">SKU</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Precio</th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Stock</th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider"></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-slate-100">
-                  {searchResults.map((product, index) => (
-                    <tr 
-                      key={product.id} 
-                      className="hover:bg-blue-50 transition-all"
-                      style={{ 
-                        animationDelay: `${index * 50}ms`,
-                        animation: 'fadeIn 0.3s ease-in-out forwards'
-                      }}
-                    >
-                      <td className="px-6 py-4 whitespace-normal text-sm font-medium text-slate-800">
-                        {product.name}
-                        {product.description && (
-                          <div className="text-xs text-slate-500 mt-1 line-clamp-1">{product.description}</div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 flex items-center">
-                        <FaBarcode className="mr-1.5 text-blue-500" size={14} /> {product.sku}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 text-right font-medium">
-                        {formatCurrency(product.sellingPrice)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium 
-                          ${product.stock <= 0 ? 'bg-red-100 text-red-800 border border-red-200' : 
-                            product.stock < 5 ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : 
-                            'bg-emerald-100 text-emerald-800 border border-emerald-200'}`}>
-                          <MdOutlineInventory2 className="mr-1" />
-                          {product.stock}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => addToCart(product)}
-                          disabled={product.stock <= 0}
-                          className={`inline-flex items-center text-white px-3 py-2 rounded-md shadow-sm ${
-                            product.stock <= 0 
-                              ? 'bg-slate-300 cursor-not-allowed' 
-                              : 'bg-blue-600 hover:bg-blue-700 transition-all hover:shadow-md'
-                          }`}
-                        >
-                          <FaPlus className="mr-1.5" size={12} />
-                          Agregar
-                        </button>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50 sticky top-10 md:top-12 z-10 shadow-sm">
+                    <tr>
+                      <th className="px-2 md:px-6 py-2 md:py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Producto</th>
+                      <th className="hidden md:table-cell px-2 md:px-6 py-2 md:py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">SKU</th>
+                      <th className="px-2 md:px-6 py-2 md:py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Precio</th>
+                      <th className="px-2 md:px-6 py-2 md:py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Stock</th>
+                      <th className="px-2 md:px-6 py-2 md:py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-slate-100">
+                    {searchResults.map((product, index) => (
+                      <tr 
+                        key={product.id} 
+                        className="hover:bg-blue-50 transition-all"
+                        style={{ 
+                          animationDelay: `${index * 50}ms`,
+                          animation: 'fadeIn 0.3s ease-in-out forwards'
+                        }}
+                      >
+                        <td className="px-2 md:px-6 py-2 md:py-4 whitespace-normal text-xs md:text-sm font-medium text-slate-800">
+                          <div className="flex flex-col">
+                            <span className="line-clamp-1">{product.name}</span>
+                            {product.sku && (
+                              <div className="text-xs text-slate-500 mt-0.5 md:hidden flex items-center">
+                                <FaBarcode className="mr-1 text-blue-500" size={10} /> {product.sku}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="hidden md:table-cell px-2 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-slate-600">
+                          <div className="flex items-center">
+                            <FaBarcode className="mr-1.5 text-blue-500" size={12} /> {product.sku}
+                          </div>
+                        </td>
+                        <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-700 text-right font-medium">
+                          {formatCurrency(product.sellingPrice)}
+                        </td>
+                        <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center">
+                          <span className={`inline-flex items-center px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-xs font-medium 
+                            ${product.stock <= 0 ? 'bg-red-100 text-red-800 border border-red-200' : 
+                              product.stock < 5 ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : 
+                              'bg-emerald-100 text-emerald-800 border border-emerald-200'}`}>
+                            <MdOutlineInventory2 className="mr-0.5 sm:mr-1" />
+                            {product.stock}
+                          </span>
+                        </td>
+                        <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm font-medium">
+                          <button
+                            onClick={() => addToCart(product)}
+                            disabled={product.stock <= 0}
+                            className={`inline-flex items-center text-white px-2 sm:px-3 py-1 sm:py-2 rounded-md shadow-sm ${
+                              product.stock <= 0 
+                                ? 'bg-slate-300 cursor-not-allowed' 
+                                : 'bg-blue-600 hover:bg-blue-700 transition-all hover:shadow-md'
+                            }`}
+                          >
+                            <FaPlus className="mr-1 sm:mr-1.5" size={10} />
+                            <span className="hidden xs:inline">Agregar</span>
+                            <span className="xs:hidden">+</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
           
           {/* Carrito de compras */}
-          <div className="bg-white rounded-lg shadow-md p-5 mb-6 border border-slate-200 hover:shadow-lg transition-shadow duration-300">
-            <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
+          <div className="bg-white rounded-lg shadow-md p-3 sm:p-5 mb-4 sm:mb-6 border border-slate-200 hover:shadow-lg transition-shadow duration-300">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 mb-3 sm:mb-4 pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-blue-100 text-blue-700 rounded-full">
-                  <FaShoppingCart size={18} />
+                <div className="p-1.5 sm:p-2 bg-blue-100 text-blue-700 rounded-full">
+                  <FaShoppingCart size={16} className="sm:text-lg" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800">Carrito</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-800">Carrito</h3>
                   {cart.length > 0 && (
-                    <p className="text-sm text-slate-500">
+                    <p className="text-xs sm:text-sm text-slate-500">
                       {cart.length} {cart.length === 1 ? 'producto' : 'productos'} en carrito
                     </p>
                   )}
                 </div>
                 {cart.length > 0 && (
-                  <span className="ml-2 bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded-full">
+                  <span className="ml-2 bg-blue-100 text-blue-800 text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full">
                     {cart.length} {cart.length === 1 ? 'item' : 'items'}
                   </span>
                 )}
@@ -783,25 +834,25 @@ const POS = () => {
               <button 
                 onClick={clearCart}
                 disabled={cart.length === 0}
-                className={`inline-flex items-center gap-1.5 text-white px-3.5 py-2 rounded-md transition-all shadow-sm ${
+                className={`inline-flex items-center gap-1.5 text-white px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-md transition-all shadow-sm ${
                   cart.length === 0 
                     ? 'bg-slate-300 cursor-not-allowed' 
                     : 'bg-red-600 hover:bg-red-700 hover:shadow'
                 }`}
               >
-                <FaTrash size={12} />
+                <FaTrash size={10} className="sm:text-xs" />
                 Vaciar carrito
               </button>
             </div>
             
             {cart.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-300">
-                <FaShoppingCart size={64} className="mb-4 opacity-30" />
-                <p className="text-xl font-medium">El carrito está vacío</p>
-                <p className="text-sm mt-2 max-w-sm text-center">Usa el buscador de productos para agregar items al carrito de compras</p>
-                <div className="mt-4 flex items-center text-blue-600">
-                  <FaSearch className="mr-2" />
-                  <p className="text-sm font-medium">Comienza buscando un producto</p>
+              <div className="flex flex-col items-center justify-center py-8 sm:py-16 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                <FaShoppingCart size={48} className="sm:text-6xl mb-3 sm:mb-4 opacity-30" />
+                <p className="text-lg sm:text-xl font-medium">El carrito está vacío</p>
+                <p className="text-xs sm:text-sm mt-2 max-w-sm text-center px-4">Usa el buscador de productos para agregar items al carrito de compras</p>
+                <div className="mt-3 sm:mt-4 flex items-center text-blue-600">
+                  <FaSearch className="mr-1.5 sm:mr-2" size={12} />
+                  <p className="text-xs sm:text-sm font-medium">Comienza buscando un producto</p>
                 </div>
               </div>
             ) : (
@@ -809,11 +860,11 @@ const POS = () => {
                 <table className="min-w-full divide-y divide-slate-200">
                   <thead className="bg-gradient-to-r from-slate-100 to-slate-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Producto</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Precio</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Cant.</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Total</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Acciones</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Producto</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Precio</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Cant.</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Total</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-slate-100">
@@ -826,15 +877,15 @@ const POS = () => {
                           animation: 'fadeIn 0.3s ease-in-out forwards'
                         }}
                       >
-                        <td className="px-4 py-4 whitespace-normal text-sm text-slate-800">
-                          <div className="font-medium">{item.name}</div>
+                        <td className="px-2 sm:px-4 py-2 sm:py-4 whitespace-normal text-xs sm:text-sm text-slate-800">
+                          <div className="font-medium line-clamp-2">{item.name}</div>
                           {item.sku && (
-                            <div className="text-xs text-slate-500 flex items-center mt-1">
-                              <FaTag size={10} className="mr-1 text-blue-500" /> {item.sku}
+                            <div className="text-xs text-slate-500 flex items-center mt-0.5 sm:mt-1">
+                              <FaTag size={8} className="sm:text-xs mr-0.5 sm:mr-1 text-blue-500" /> {item.sku}
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right">
+                        <td className="px-2 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right">
                           <div className="flex items-center justify-end">
                             <span className="text-slate-400 mr-1">$</span>
                             <input
@@ -843,37 +894,38 @@ const POS = () => {
                               step="0.01"
                               value={item.unitPrice}
                               onChange={(e) => updateCartItem(index, 'unitPrice', e.target.value)}
-                              className="w-24 p-2 border border-slate-300 rounded-md text-right focus-ring"
+                              className="w-16 sm:w-24 p-1 sm:p-2 border border-slate-300 rounded-md text-right focus-ring text-xs sm:text-sm"
                             />
                           </div>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm">
+                        <td className="px-2 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
                           <input
                             type="number"
                             min="1"
                             max={item.stock}
                             value={item.quantity}
                             onChange={(e) => updateCartItem(index, 'quantity', e.target.value)}
-                            className="w-20 p-2 border border-slate-300 rounded-md text-center mx-auto block focus-ring"
+                            className="w-12 sm:w-20 p-1 sm:p-2 border border-slate-300 rounded-md text-center mx-auto block focus-ring text-xs sm:text-sm"
                           />
-                          <div className="text-xs text-slate-500 text-center mt-1.5">
+                          <div className="text-xs text-slate-500 text-center mt-0.5 sm:mt-1.5">
                             <span className={item.stock < 5 ? 'text-amber-600 font-medium' : ''}>
                               Stock: {item.stock}
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-right font-semibold text-slate-800">
-                          <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 inline-block min-w-[100px]">
+                        <td className="px-2 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right font-semibold text-slate-800">
+                          <div className="bg-slate-50 p-1 sm:p-2 rounded-lg border border-slate-200 inline-block min-w-[70px] sm:min-w-[100px]">
                             {formatCurrency(item.totalPrice)}
                           </div>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-center">
+                        <td className="px-2 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center">
                           <button
                             onClick={() => removeFromCart(index)}
-                            className="inline-flex items-center text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-md transition-colors shadow-sm hover:shadow"
+                            className="inline-flex items-center text-white bg-red-500 hover:bg-red-600 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md transition-colors shadow-sm hover:shadow"
                           >
-                            <FaTrash size={12} className="mr-1.5" />
-                            Eliminar
+                            <FaTrash size={10} className="sm:text-xs mr-1 sm:mr-1.5" />
+                            <span className="hidden xs:inline">Eliminar</span>
+                            <span className="xs:hidden">X</span>
                           </button>
                         </td>
                       </tr>
@@ -881,10 +933,10 @@ const POS = () => {
                   </tbody>
                 </table>
                 
-                <div className="bg-slate-50 p-4 border-t border-slate-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600">Productos en carrito: {cart.length}</span>
-                    <span className="text-sm font-medium text-slate-800">
+                <div className="bg-slate-50 p-3 sm:p-4 border-t border-slate-200">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                    <span className="text-xs sm:text-sm text-slate-600">Productos: {cart.length}</span>
+                    <span className="text-xs sm:text-sm font-medium text-slate-800">
                       Subtotal: {formatCurrency(calculateSubtotal())}
                     </span>
                   </div>
@@ -896,55 +948,55 @@ const POS = () => {
       </div>
       
       {/* Panel derecho - Cliente, totales y pago */}
-      <div className="w-1/3 bg-white p-5 border-l border-slate-200 flex flex-col animate-fadeIn">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 -m-5 mb-5 shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <MdReceiptLong size={24} />
+      <div className="w-full md:w-1/3 bg-white p-3 md:p-5 border-t md:border-t-0 md:border-l border-slate-200 flex flex-col animate-fadeIn mt-3 md:mt-0">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-3 md:p-4 -m-3 md:-m-5 mb-4 md:mb-5 shadow-md">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 bg-white/20 rounded-lg">
+              <MdReceiptLong size={20} className="md:text-2xl" />
             </div>
             <div>
-              <h2 className="font-bold text-xl">Detalles de la venta</h2>
-              <p className="text-sm text-blue-100">Configure cliente y método de pago</p>
+              <h2 className="font-bold text-lg md:text-xl">Detalles de la venta</h2>
+              <p className="text-xs md:text-sm text-blue-100">Configure cliente y método de pago</p>
             </div>
           </div>
         </div>
         
         {/* Sección de cliente */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3 bg-slate-50 p-2 rounded-lg">
-            <div className="p-2 bg-blue-100 text-blue-700 rounded-full">
-              <FaUser size={16} />
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 bg-slate-50 p-1.5 sm:p-2 rounded-lg">
+            <div className="p-1.5 sm:p-2 bg-blue-100 text-blue-700 rounded-full">
+              <FaUser size={14} className="sm:text-base" />
             </div>
-            <h3 className="font-bold text-slate-800">Información del Cliente</h3>
+            <h3 className="font-bold text-sm sm:text-base text-slate-800">Información del Cliente</h3>
           </div>
           
           {customer ? (
-            <div className="bg-blue-50 p-5 rounded-lg border border-blue-200 mb-3 shadow-sm hover:shadow transition-shadow duration-300">
+            <div className="bg-blue-50 p-3 sm:p-5 rounded-lg border border-blue-200 mb-2 sm:mb-3 shadow-sm hover:shadow transition-shadow duration-300">
               <div className="flex justify-between items-start">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
                     {customer.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-800 text-lg">{customer.name}</p>
-                    <div className="mt-2 space-y-2">
+                    <p className="font-semibold text-slate-800 text-sm sm:text-lg">{customer.name}</p>
+                    <div className="mt-1 sm:mt-2 space-y-1 sm:space-y-2">
                       {customer.document && (
-                        <p className="text-sm text-slate-600 flex items-center">
-                          <span className="w-5 h-5 inline-flex items-center justify-center bg-blue-100 text-blue-800 rounded-full mr-2 text-xs">ID</span>
+                        <p className="text-xs sm:text-sm text-slate-600 flex items-center">
+                          <span className="w-4 h-4 sm:w-5 sm:h-5 inline-flex items-center justify-center bg-blue-100 text-blue-800 rounded-full mr-1 sm:mr-2 text-xs">ID</span>
                           {customer.document}
                         </p>
                       )}
                       {customer.phone && (
-                        <p className="text-sm text-slate-600 flex items-center">
-                          <span className="w-5 h-5 inline-flex items-center justify-center bg-blue-100 text-blue-800 rounded-full mr-2 text-xs">📞</span>
+                        <p className="text-xs sm:text-sm text-slate-600 flex items-center">
+                          <span className="w-4 h-4 sm:w-5 sm:h-5 inline-flex items-center justify-center bg-blue-100 text-blue-800 rounded-full mr-1 sm:mr-2 text-xs">📞</span>
                           {customer.phone}
                         </p>
                       )}
                     </div>
-                    <div className="mt-3 bg-white p-3 rounded-lg shadow-sm border border-blue-200">
-                      <p className="text-sm text-blue-800 flex items-center justify-between">
+                    <div className="mt-2 sm:mt-3 bg-white p-2 sm:p-3 rounded-lg shadow-sm border border-blue-200">
+                      <p className="text-xs sm:text-sm text-blue-800 flex items-center justify-between">
                         <span className="font-medium">Puntos disponibles</span>
-                        <span className="font-bold bg-blue-100 px-2 py-1 rounded-md">
+                        <span className="font-bold bg-blue-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md">
                           {customer.totalPoints - customer.usedPoints || 0} pts
                         </span>
                       </p>
@@ -953,17 +1005,17 @@ const POS = () => {
                 </div>
                 <button
                   onClick={clearCustomer}
-                  className="text-slate-500 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition-all"
+                  className="text-slate-500 hover:text-red-600 hover:bg-red-50 p-1.5 sm:p-2 rounded-full transition-all"
                 >
-                  <FaTimes size={16} />
+                  <FaTimes size={14} className="sm:text-base" />
                 </button>
               </div>
             </div>
           ) : (
             <div className="animate-fadeIn">
-              <div className="relative mb-3">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaSearch className="h-4 w-4 text-blue-500" />
+              <div className="relative mb-2 sm:mb-3">
+                <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+                  <FaSearch className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
                 </div>
                 <input
                   type="text"
@@ -971,23 +1023,23 @@ const POS = () => {
                   value={customerSearch}
                   onChange={(e) => setCustomerSearch(e.target.value)}
                   placeholder="Buscar cliente por nombre o documento..."
-                  className="block w-full pl-10 pr-20 py-3 border border-slate-300 rounded-lg focus-ring bg-white shadow-sm transition-all"
+                  className="block w-full pl-8 sm:pl-10 pr-16 sm:pr-20 py-2 sm:py-3 border border-slate-300 rounded-lg focus-ring bg-white shadow-sm transition-all text-xs sm:text-sm"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center">
                   <button
                     onClick={() => setShowCustomerForm(true)}
-                    className="inline-flex items-center mr-1.5 bg-emerald-600 text-white px-3 py-1.5 rounded-md hover:bg-emerald-700 transition-colors shadow-sm"
+                    className="inline-flex items-center mr-1 sm:mr-1.5 bg-emerald-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-md hover:bg-emerald-700 transition-colors shadow-sm text-xs sm:text-sm"
                   >
-                    <FaPlus size={12} className="mr-1.5" />
+                    <FaPlus size={10} className="sm:text-xs mr-1 sm:mr-1.5" />
                     Nuevo
                   </button>
                 </div>
               </div>
               
               {customerResults.length > 0 && (
-                <div className="bg-white rounded-lg shadow-md max-h-64 overflow-y-auto mb-3 border border-slate-200 animate-fadeIn">
-                  <div className="sticky top-0 z-10 bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-2 border-b border-slate-200">
-                    <p className="font-medium text-slate-600 text-sm">
+                <div className="bg-white rounded-lg shadow-md max-h-40 sm:max-h-64 overflow-y-auto mb-2 sm:mb-3 border border-slate-200 animate-fadeIn">
+                  <div className="sticky top-0 z-10 bg-gradient-to-r from-slate-50 to-slate-100 px-3 sm:px-4 py-1 sm:py-2 border-b border-slate-200">
+                    <p className="font-medium text-slate-600 text-xs sm:text-sm">
                       Clientes encontrados: {customerResults.length}
                     </p>
                   </div>
@@ -995,28 +1047,28 @@ const POS = () => {
                     {customerResults.map((client, index) => (
                       <li 
                         key={client.id}
-                        className="p-3 hover:bg-blue-50 cursor-pointer transition-colors pos-item-hover"
+                        className="p-2 sm:p-3 hover:bg-blue-50 cursor-pointer transition-colors pos-item-hover"
                         onClick={() => selectCustomer(client)}
                         style={{
                           animationDelay: `${index * 50}ms`,
                           animation: 'fadeIn 0.3s ease-in-out forwards'
                         }}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium text-sm">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium text-xs sm:text-sm">
                             {client.name.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1">
-                            <p className="font-medium text-slate-800">{client.name}</p>
-                            <div className="flex flex-col space-y-1 mt-1">
-                              <div className="flex gap-3">
+                            <p className="font-medium text-xs sm:text-sm text-slate-800">{client.name}</p>
+                            <div className="flex flex-col space-y-0.5 sm:space-y-1 mt-0.5 sm:mt-1">
+                              <div className="flex flex-wrap gap-2 sm:gap-3">
                                 {client.document && <p className="text-xs text-slate-600">Doc: {client.document}</p>}
                                 {client.phone && <p className="text-xs text-slate-600">Tel: {client.phone}</p>}
                               </div>
                               <div className="flex items-center gap-1">
-                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-blue-500"></div>
                                 <p className="text-xs text-blue-600 font-medium">
-                                  {client.totalPoints - client.usedPoints || 0} puntos disponibles
+                                  {client.totalPoints - client.usedPoints || 0} puntos
                                 </p>
                               </div>
                             </div>
@@ -1029,8 +1081,8 @@ const POS = () => {
               )}
               
               {customerSearch.length > 0 && customerResults.length === 0 && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800 text-sm flex items-center gap-2 animate-fadeIn">
-                  <FaSearch />
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-4 text-blue-800 text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 animate-fadeIn">
+                  <FaSearch size={10} className="sm:text-xs" />
                   <p>No se encontraron clientes con ese criterio de búsqueda.</p>
                 </div>
               )}
@@ -1039,28 +1091,28 @@ const POS = () => {
         </div>
         
         {/* Sección de descuentos e impuestos */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3 bg-slate-50 p-2 rounded-lg">
-            <div className="p-2 bg-rose-100 text-rose-700 rounded-full">
-              <MdDiscount size={18} />
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 bg-slate-50 p-1.5 sm:p-2 rounded-lg">
+            <div className="p-1.5 sm:p-2 bg-rose-100 text-rose-700 rounded-full">
+              <MdDiscount size={14} className="sm:text-lg" />
             </div>
-            <h3 className="font-bold text-slate-800">Descuentos e Impuestos</h3>
+            <h3 className="font-bold text-sm sm:text-base text-slate-800">Descuentos e Impuestos</h3>
           </div>
           
-          <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm space-y-5 hover:shadow transition-shadow duration-300">
+          <div className="bg-white p-3 sm:p-5 rounded-lg border border-slate-200 shadow-sm space-y-3 sm:space-y-5 hover:shadow transition-shadow duration-300">
             {/* Descuentos */}
-            <div className="pb-4 border-b border-slate-200">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
-                    <MdLocalOffer size={16} />
+            <div className="pb-3 sm:pb-4 border-b border-slate-200">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
+                    <MdLocalOffer size={14} className="sm:text-base" />
                   </span>
-                  <label className="block text-sm font-medium text-slate-700">Tipo de Descuento:</label>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-700">Tipo de Descuento:</label>
                 </div>
                 <select
                   value={discountType}
                   onChange={(e) => setDiscountType(e.target.value)}
-                  className="border border-slate-300 py-2 px-3 rounded-md text-sm focus-ring bg-white shadow-sm"
+                  className="border border-slate-300 py-1 sm:py-2 px-2 sm:px-3 rounded-md text-xs sm:text-sm focus-ring bg-white shadow-sm"
                 >
                   <option value="percent">Porcentaje (%)</option>
                   <option value="amount">Monto fijo ($)</option>
@@ -1068,7 +1120,7 @@ const POS = () => {
               </div>
               
               {discountType === 'percent' ? (
-                <div className="flex items-center mt-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <div className="flex items-center mt-2 bg-slate-50 p-2 sm:p-3 rounded-lg border border-slate-100">
                   <div className="relative flex-1">
                     <input
                       type="number"
@@ -1076,36 +1128,36 @@ const POS = () => {
                       max="100"
                       value={discountPercent}
                       onChange={(e) => setDiscountPercent(parseFloat(e.target.value) || 0)}
-                      className="w-full py-2.5 pl-3 pr-10 border border-slate-300 rounded-lg text-right focus-ring bg-white shadow-sm"
+                      className="w-full py-1.5 sm:py-2.5 pl-2 sm:pl-3 pr-8 sm:pr-10 border border-slate-300 rounded-lg text-right focus-ring bg-white shadow-sm text-xs sm:text-sm"
                     />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <span className="text-slate-500 font-medium">%</span>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:pr-3 pointer-events-none">
+                      <span className="text-slate-500 font-medium text-xs sm:text-sm">%</span>
                     </div>
                   </div>
                   
                   {discountPercent > 0 && (
-                    <div className="ml-4 text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200 font-medium">
+                    <div className="ml-2 sm:ml-4 text-rose-600 bg-rose-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-rose-200 font-medium text-xs sm:text-sm">
                       - {formatCurrency(calculateDiscount())}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="flex items-center mt-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <div className="flex items-center mt-2 bg-slate-50 p-2 sm:p-3 rounded-lg border border-slate-100">
                   <div className="relative flex-1">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <span className="text-slate-500 font-medium">$</span>
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-2 sm:pl-3 pointer-events-none">
+                      <span className="text-slate-500 font-medium text-xs sm:text-sm">$</span>
                     </div>
                     <input
                       type="number"
                       min="0"
                       value={discountAmount}
                       onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
-                      className="w-full py-2.5 pl-8 border border-slate-300 rounded-lg text-right focus-ring bg-white shadow-sm"
+                      className="w-full py-1.5 sm:py-2.5 pl-6 sm:pl-8 border border-slate-300 rounded-lg text-right focus-ring bg-white shadow-sm text-xs sm:text-sm"
                     />
                   </div>
                   
                   {discountAmount > 0 && (
-                    <div className="ml-4 text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200 font-medium">
+                    <div className="ml-2 sm:ml-4 text-rose-600 bg-rose-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-rose-200 font-medium text-xs sm:text-sm">
                       - {formatCurrency(discountAmount)}
                     </div>
                   )}
@@ -1115,14 +1167,14 @@ const POS = () => {
             
             {/* Impuestos */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                  <FaRegLightbulb size={16} />
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+                <span className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                  <FaRegLightbulb size={14} className="sm:text-base" />
                 </span>
-                <label className="block text-sm font-medium text-slate-700">Impuesto (%):</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-700">Impuesto (%):</label>
               </div>
               
-              <div className="flex items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
+              <div className="flex items-center bg-slate-50 p-2 sm:p-3 rounded-lg border border-slate-100">
                 <div className="relative flex-1">
                   <input
                     type="number"
@@ -1130,15 +1182,15 @@ const POS = () => {
                     max="100"
                     value={taxRate}
                     onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
-                    className="w-full py-2.5 pl-3 pr-10 border border-slate-300 rounded-lg text-right focus-ring bg-white shadow-sm"
+                    className="w-full py-1.5 sm:py-2.5 pl-2 sm:pl-3 pr-8 sm:pr-10 border border-slate-300 rounded-lg text-right focus-ring bg-white shadow-sm text-xs sm:text-sm"
                   />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <span className="text-slate-500 font-medium">%</span>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:pr-3 pointer-events-none">
+                    <span className="text-slate-500 font-medium text-xs sm:text-sm">%</span>
                   </div>
                 </div>
                 
                 {taxRate > 0 && (
-                  <div className="ml-4 text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 font-medium">
+                  <div className="ml-2 sm:ml-4 text-blue-600 bg-blue-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-blue-200 font-medium text-xs sm:text-sm">
                     + {formatCurrency(calculateTax())}
                   </div>
                 )}
@@ -1148,12 +1200,12 @@ const POS = () => {
         </div>
         
         {/* Notas */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3 bg-slate-50 p-2 rounded-lg">
-            <div className="p-2 bg-amber-100 text-amber-700 rounded-full">
-              <FaEdit size={16} />
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 bg-slate-50 p-1.5 sm:p-2 rounded-lg">
+            <div className="p-1.5 sm:p-2 bg-amber-100 text-amber-700 rounded-full">
+              <FaEdit size={14} className="sm:text-base" />
             </div>
-            <h3 className="font-bold text-slate-800">Notas de la Venta</h3>
+            <h3 className="font-bold text-sm sm:text-base text-slate-800">Notas de la Venta</h3>
           </div>
           
           <div className="relative bg-white p-1 rounded-lg border border-slate-200 shadow-sm hover:shadow transition-shadow duration-300">
@@ -1161,9 +1213,9 @@ const POS = () => {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Añadir notas a la venta (opcional)..."
-              className="w-full p-3 rounded-lg min-h-[100px] focus-ring resize-none"
+              className="w-full p-2 sm:p-3 rounded-lg min-h-[60px] sm:min-h-[100px] focus-ring resize-none text-xs sm:text-sm"
             />
-            <div className="flex justify-end p-2 text-xs text-slate-500">
+            <div className="flex justify-end p-1 sm:p-2 text-xs text-slate-500">
               {notes.length > 0 ? `${notes.length} caracteres` : 'Sin notas'}
             </div>
           </div>
@@ -1171,41 +1223,41 @@ const POS = () => {
         
         {/* Totales */}
         <div className="mt-auto">
-          <div className="bg-gradient-to-r from-slate-50 to-slate-100 p-5 rounded-lg shadow-md mb-5 border border-slate-200 hover:shadow-lg transition-shadow duration-300">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-slate-600">
+          <div className="bg-gradient-to-r from-slate-50 to-slate-100 p-3 sm:p-5 rounded-lg shadow-md mb-3 sm:mb-5 border border-slate-200 hover:shadow-lg transition-shadow duration-300">
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex justify-between items-center text-slate-600 text-xs sm:text-sm">
                 <span>Subtotal:</span>
                 <span className="font-medium">{formatCurrency(calculateSubtotal())}</span>
               </div>
               
               {calculateDiscount() > 0 && (
-                <div className="flex justify-between items-center text-rose-600">
+                <div className="flex justify-between items-center text-rose-600 text-xs sm:text-sm">
                   <span className="flex items-center">
-                    <MdDiscount size={18} className="mr-1.5" /> 
+                    <MdDiscount size={14} className="sm:text-lg mr-1 sm:mr-1.5" /> 
                     Descuento:
                   </span>
-                  <span className="font-medium bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                  <span className="font-medium bg-rose-50 px-1.5 sm:px-2 py-0.5 rounded border border-rose-200">
                     -{formatCurrency(calculateDiscount())}
                   </span>
                 </div>
               )}
               
               {calculateTax() > 0 && (
-                <div className="flex justify-between items-center text-blue-600">
+                <div className="flex justify-between items-center text-blue-600 text-xs sm:text-sm">
                   <span className="flex items-center">
-                    <FaRegLightbulb size={16} className="mr-1.5" />
+                    <FaRegLightbulb size={12} className="sm:text-base mr-1 sm:mr-1.5" />
                     Impuesto:
                   </span>
-                  <span className="font-medium bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                  <span className="font-medium bg-blue-50 px-1.5 sm:px-2 py-0.5 rounded border border-blue-200">
                     +{formatCurrency(calculateTax())}
                   </span>
                 </div>
               )}
             </div>
             
-            <div className="flex justify-between items-center font-bold text-xl mt-5 pt-3 border-t border-slate-300">
+            <div className="flex justify-between items-center font-bold text-base sm:text-xl mt-3 sm:mt-5 pt-2 sm:pt-3 border-t border-slate-300">
               <span className="text-slate-800">TOTAL:</span>
-              <span className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-sm">
+              <span className="bg-blue-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-sm text-sm sm:text-lg">
                 {formatCurrency(calculateTotal())}
               </span>
             </div>
@@ -1214,13 +1266,13 @@ const POS = () => {
           <button
             onClick={handleProceedToPayment}
             disabled={cart.length === 0 || !activeShift}
-            className={`w-full py-4 rounded-lg font-bold text-white text-lg flex items-center justify-center gap-3 shadow-md ${
+            className={`w-full py-3 sm:py-4 rounded-lg font-bold text-white text-base sm:text-lg flex items-center justify-center gap-2 sm:gap-3 shadow-md ${
               cart.length === 0 || !activeShift 
                 ? 'bg-slate-300 cursor-not-allowed' 
                 : 'bg-blue-600 hover:bg-blue-700 transition-all hover:shadow-lg'
             }`}
           >
-            <MdPayment size={26} />
+            <MdPayment size={20} className="sm:text-2xl" />
             Proceder al Pago
             {!activeShift && <span className="text-xs">(Sin turno activo)</span>}
             {cart.length === 0 && <span className="text-xs">(Carrito vacío)</span>}
@@ -1229,31 +1281,31 @@ const POS = () => {
         
         {/* Modal de Creación de Cliente */}
         {showCustomerForm && (
-          <div className="fixed inset-0 bg-slate-800 bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md animate-fadeIn">
-              <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-200">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 text-blue-700 rounded-full">
-                    <FaUser size={20} />
+          <div className="fixed inset-0 bg-slate-800 bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50 p-2">
+            <div className="bg-white rounded-xl shadow-2xl p-4 md:p-6 w-full max-w-md animate-fadeIn">
+              <div className="flex items-center justify-between mb-3 md:mb-5 pb-2 md:pb-3 border-b border-slate-200">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="p-1.5 md:p-2 bg-blue-100 text-blue-700 rounded-full">
+                    <FaUser size={16} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-xl text-slate-800">Nuevo Cliente</h3>
-                    <p className="text-sm text-slate-500">Registrar un nuevo cliente</p>
+                    <h3 className="font-bold text-lg md:text-xl text-slate-800">Nuevo Cliente</h3>
+                    <p className="text-xs md:text-sm text-slate-500">Registrar un nuevo cliente</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowCustomerForm(false)}
-                  className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-full transition-all"
+                  className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 md:p-2 rounded-full transition-all"
                 >
-                  <FaTimes size={18} />
+                  <FaTimes size={16} />
                 </button>
               </div>
               
               <form onSubmit={createCustomer}>
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center">
-                      <span className="w-1 h-4 bg-red-500 rounded mr-2"></span>
+                    <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-1.5 flex items-center">
+                      <span className="w-1 h-3 md:h-4 bg-red-500 rounded mr-1.5 md:mr-2"></span>
                       Nombre*
                     </label>
                     <input
@@ -1261,15 +1313,15 @@ const POS = () => {
                       name="name"
                       value={newCustomer.name}
                       onChange={handleCustomerInputChange}
-                      className="w-full p-3 border border-slate-300 rounded-lg focus-ring shadow-sm"
+                      className="w-full p-2 md:p-3 border border-slate-300 rounded-lg focus-ring shadow-sm text-sm"
                       required
                       placeholder="Ingrese el nombre completo"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center">
-                      <span className="w-1 h-4 bg-slate-300 rounded mr-2"></span>
+                    <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1 md:mb-1.5 flex items-center">
+                      <span className="w-1 h-3 md:h-4 bg-slate-300 rounded mr-1.5 md:mr-2"></span>
                       Documento
                     </label>
                     <input
@@ -1277,7 +1329,7 @@ const POS = () => {
                       name="document"
                       value={newCustomer.document}
                       onChange={handleCustomerInputChange}
-                      className="w-full p-3 border border-slate-300 rounded-lg focus-ring shadow-sm"
+                      className="w-full p-2 md:p-3 border border-slate-300 rounded-lg focus-ring shadow-sm text-sm"
                       placeholder="Número de identificación"
                     />
                   </div>
@@ -1313,19 +1365,19 @@ const POS = () => {
                   </div>
                 </div>
                 
-                <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-slate-200">
+                <div className="flex flex-col-reverse md:flex-row md:justify-end gap-2 md:space-x-3 mt-6 md:mt-8 pt-3 md:pt-4 border-t border-slate-200">
                   <button
                     type="button"
                     onClick={() => setShowCustomerForm(false)}
-                    className="px-5 py-2.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors font-medium shadow-sm"
+                    className="w-full md:w-auto px-4 md:px-5 py-2 md:py-2.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors font-medium shadow-sm text-sm"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center shadow-sm hover:shadow"
+                    className="w-full md:w-auto px-4 md:px-5 py-2 md:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center shadow-sm hover:shadow text-sm"
                   >
-                    <FaPlus size={12} className="mr-2" />
+                    <FaPlus size={10} className="md:text-xs mr-1.5 md:mr-2" />
                     Guardar Cliente
                   </button>
                 </div>
@@ -1336,97 +1388,97 @@ const POS = () => {
         
         {/* Modal de Pago */}
         {showPaymentModal && (
-          <div className="fixed inset-0 bg-slate-800 bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto animate-fadeIn">
-              <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-200">
-                <div className="flex items-center gap-2">
-                  <MdPayment className="text-blue-600" size={24} />
-                  <h3 className="font-bold text-xl text-slate-800">Finalizar Venta</h3>
+          <div className="fixed inset-0 bg-slate-800 bg-opacity-75 flex items-center justify-center z-50 p-2">
+            <div className="bg-white rounded-lg shadow-xl p-3 md:p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto animate-fadeIn">
+              <div className="flex items-center justify-between mb-2 md:mb-5 pb-2 md:pb-3 border-b border-slate-200">
+                <div className="flex items-center gap-1 md:gap-2">
+                  <MdPayment className="text-blue-600" size={18} />
+                  <h3 className="font-bold text-base md:text-xl text-slate-800">Finalizar Venta</h3>
                 </div>
                 <button
                   onClick={() => setShowPaymentModal(false)}
                   className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-full transition-all"
                   disabled={isProcessing}
                 >
-                  <FaTimes size={18} />
+                  <FaTimes size={16} />
                 </button>
               </div>
               
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <FaShoppingCart className="text-slate-600" size={16} />
-                  <h4 className="font-medium text-slate-700">Resumen de la venta</h4>
+              <div className="mb-4 md:mb-6">
+                <div className="flex items-center gap-1 md:gap-2 mb-2 md:mb-3">
+                  <FaShoppingCart className="text-slate-600" size={14} />
+                  <h4 className="font-medium text-sm md:text-base text-slate-700">Resumen de la venta</h4>
                 </div>
-                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                  <div className="flex justify-between mb-2 text-slate-600">
+                <div className="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-200">
+                  <div className="flex justify-between mb-1.5 md:mb-2 text-slate-600 text-sm md:text-base">
                     <span>Subtotal:</span>
                     <span className="font-medium">{formatCurrency(calculateSubtotal())}</span>
                   </div>
                   {calculateDiscount() > 0 && (
-                    <div className="flex justify-between mb-2 text-rose-600">
+                    <div className="flex justify-between mb-1.5 md:mb-2 text-rose-600 text-sm md:text-base">
                       <span className="flex items-center">
-                        <MdDiscount className="mr-1" size={16} />
+                        <MdDiscount className="mr-1" size={14} />
                         Descuento:
                       </span>
                       <span className="font-medium">-{formatCurrency(calculateDiscount())}</span>
                     </div>
                   )}
                   {calculateTax() > 0 && (
-                    <div className="flex justify-between mb-2 text-blue-600">
+                    <div className="flex justify-between mb-1.5 md:mb-2 text-blue-600 text-sm md:text-base">
                       <span>Impuesto:</span>
                       <span className="font-medium">{formatCurrency(calculateTax())}</span>
                     </div>
                   )}
-                  <div className="flex justify-between font-bold text-lg mt-3 pt-3 border-t border-slate-200">
-                    <span className="text-slate-800">Total a pagar:</span>
-                    <span className="text-slate-800">{formatCurrency(calculateTotal())}</span>
+                  <div className="flex justify-between font-bold mt-2 md:mt-3 pt-2 md:pt-3 border-t border-slate-200">
+                    <span className="text-slate-800 text-sm md:text-lg">Total a pagar:</span>
+                    <span className="text-slate-800 text-sm md:text-lg">{formatCurrency(calculateTotal())}</span>
                   </div>
                 </div>
               </div>
               
               {/* Gestión de puntos para cliente */}
               {customer && (
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full">
+                <div className="mb-4 md:mb-6">
+                  <div className="flex items-center justify-between mb-2 md:mb-3">
+                    <div className="flex items-center gap-1 md:gap-2">
+                      <div className="w-4 h-4 md:w-5 md:h-5 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full">
                         <span className="text-xs font-bold">P</span>
                       </div>
-                      <h4 className="font-medium text-slate-700">Puntos del cliente</h4>
+                      <h4 className="font-medium text-sm md:text-base text-slate-700">Puntos del cliente</h4>
                     </div>
                     
-                    <div className="bg-blue-100 text-blue-800 px-2.5 py-1 rounded-md text-xs font-medium">
+                    <div className="bg-blue-100 text-blue-800 px-2 md:px-2.5 py-0.5 md:py-1 rounded-md text-xs font-medium">
                       Disponibles: {customer.totalPoints - customer.usedPoints} pts
                     </div>
                   </div>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-4">
                     {/* Asignar puntos personalizados */}
-                    <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="font-medium text-slate-700">
+                    <div className="bg-emerald-50 p-2.5 md:p-4 rounded-lg border border-emerald-100">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2 md:mb-3">
+                        <label className="font-medium text-sm md:text-base text-slate-700 mb-1 md:mb-0">
                           Asignar puntos a esta compra:
                         </label>
-                        <span className="text-xs text-emerald-700 bg-emerald-100 px-2 py-1 rounded">
+                        <span className="text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded w-fit">
                           {paymentInfo.manualPoints > 0 ? 'Puntos personalizados' : 'Cálculo automático'}
                         </span>
                       </div>
                       
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0">
                         <div className="flex items-center">
                           <input
                             type="number"
                             min="0"
                             value={paymentInfo.manualPoints}
                             onChange={(e) => setPaymentInfo({...paymentInfo, manualPoints: parseInt(e.target.value) || 0})}
-                            className="p-2 border border-emerald-300 rounded-md w-24 text-right focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            className="p-1.5 md:p-2 border border-emerald-300 rounded-md w-20 md:w-24 text-right focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
                           />
-                          <span className="text-sm ml-3 text-emerald-700 font-medium">
+                          <span className="text-xs md:text-sm ml-2 md:ml-3 text-emerald-700 font-medium">
                             puntos
                           </span>
                         </div>
                         
-                        <div className="text-sm text-slate-600">
+                        <div className="text-xs md:text-sm text-slate-600">
                           <span className="text-slate-500">Auto:</span> {calculatePointsToEarn()} pts
                         </div>
                       </div>
@@ -1438,37 +1490,37 @@ const POS = () => {
                     
                     {/* Canjear puntos existentes */}
                     {(customer.totalPoints - customer.usedPoints) > 0 && (
-                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                        <div className="flex items-center mb-3">
+                      <div className="bg-blue-50 p-2.5 md:p-4 rounded-lg border border-blue-100">
+                        <div className="flex items-center mb-2 md:mb-3">
                           <input
                             type="checkbox"
                             id="usePoints"
                             checked={paymentInfo.usePoints}
                             onChange={(e) => setPaymentInfo({...paymentInfo, usePoints: e.target.checked})}
-                            className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                            className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
                           />
-                          <label htmlFor="usePoints" className="font-medium text-slate-700 ml-2">
+                          <label htmlFor="usePoints" className="font-medium text-sm md:text-base text-slate-700 ml-2">
                             Canjear puntos para esta compra
                           </label>
                         </div>
                         
                         {paymentInfo.usePoints && (
                           <div>
-                            <div className="flex items-center">
-                              <label className="text-sm font-medium text-slate-600 mr-3">Puntos a canjear:</label>
-                              <div className="flex-1">
+                            <div className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0">
+                              <label className="text-xs md:text-sm font-medium text-slate-600 md:mr-3">Puntos a canjear:</label>
+                              <div className="flex items-center">
                                 <input
                                   type="number"
                                   min="0"
                                   max={customer.totalPoints - customer.usedPoints}
                                   value={paymentInfo.pointsToRedeem}
                                   onChange={(e) => setPaymentInfo({...paymentInfo, pointsToRedeem: parseInt(e.target.value) || 0})}
-                                  className="p-2 border border-blue-300 rounded-md w-24 text-right focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  className="p-1.5 md:p-2 border border-blue-300 rounded-md w-20 md:w-24 text-right focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                                 />
+                                <span className="text-xs md:text-sm ml-2 md:ml-3 text-blue-700 font-medium">
+                                  = {formatCurrency(paymentInfo.pointsToRedeem * 0.1)}
+                                </span>
                               </div>
-                              <span className="text-sm ml-3 text-blue-700 font-medium">
-                                = {formatCurrency(paymentInfo.pointsToRedeem * 0.1)}
-                              </span>
                             </div>
                           </div>
                         )}
@@ -1479,33 +1531,33 @@ const POS = () => {
               )}
               
               {/* Métodos de pago */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-2">
-                    <FaMoneyBillWave className="text-emerald-600" size={16} />
-                    <h4 className="font-medium text-slate-700">Métodos de Pago</h4>
+              <div className="mb-4 md:mb-6">
+                <div className="flex justify-between items-center mb-2 md:mb-3">
+                  <div className="flex items-center gap-1 md:gap-2">
+                    <FaMoneyBillWave className="text-emerald-600" size={14} />
+                    <h4 className="font-medium text-sm md:text-base text-slate-700">Métodos de Pago</h4>
                   </div>
                   <button
                     onClick={addPaymentMethod}
-                    className="inline-flex items-center text-sm bg-emerald-600 text-white px-3 py-1.5 rounded-md hover:bg-emerald-700 transition-colors"
+                    className="inline-flex items-center text-xs md:text-sm bg-emerald-600 text-white px-2 md:px-3 py-1 md:py-1.5 rounded-md hover:bg-emerald-700 transition-colors"
                   >
-                    <FaPlus size={10} className="mr-1.5" />
+                    <FaPlus size={8} className="mr-1 md:mr-1.5" />
                     Añadir método
                   </button>
                 </div>
                 
                 <div className="space-y-4">
                   {paymentInfo.methods.map((method, index) => (
-                    <div key={index} className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="flex items-center gap-2">
-                          {method.type === 'efectivo' && <FaMoneyBillWave className="text-emerald-600" size={16} />}
-                          {method.type === 'tarjeta' && <FaCreditCard className="text-blue-600" size={16} />}
-                          {method.type === 'transferencia' && <FaExchangeAlt className="text-purple-600" size={16} />}
+                    <div key={index} className="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-200">
+                      <div className="flex justify-between items-center mb-2 md:mb-3">
+                        <div className="flex items-center gap-1 md:gap-2">
+                          {method.type === 'efectivo' && <FaMoneyBillWave className="text-emerald-600" size={14} />}
+                          {method.type === 'tarjeta' && <FaCreditCard className="text-blue-600" size={14} />}
+                          {method.type === 'transferencia' && <FaExchangeAlt className="text-purple-600" size={14} />}
                           <select
                             value={method.type}
                             onChange={(e) => updatePaymentMethod(index, 'type', e.target.value)}
-                            className="p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                            className="p-1.5 md:p-2 text-xs md:text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                           >
                             <option value="efectivo">Efectivo</option>
                             <option value="tarjeta">Tarjeta</option>
@@ -1517,19 +1569,19 @@ const POS = () => {
                         {index > 0 && (
                           <button
                             onClick={() => removePaymentMethod(index)}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1.5 rounded-md transition-colors"
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 md:p-1.5 rounded-md transition-colors"
                           >
-                            <FaTrash size={14} />
+                            <FaTrash size={12} />
                           </button>
                         )}
                       </div>
                       
-                      <div className="flex space-x-3">
+                      <div className="flex flex-col md:flex-row md:space-x-3 space-y-3 md:space-y-0">
                         <div className="flex-1">
                           <label className="block text-xs font-medium text-slate-500 mb-1">Monto</label>
                           <div className="relative">
-                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                              <span className="text-slate-500">$</span>
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-2 md:pl-3 pointer-events-none">
+                              <span className="text-slate-500 text-xs md:text-sm">$</span>
                             </div>
                             <input
                               type="number"
@@ -1537,7 +1589,7 @@ const POS = () => {
                               step="0.01"
                               value={method.amount}
                               onChange={(e) => updatePaymentMethod(index, 'amount', e.target.value)}
-                              className="w-full pl-7 p-2.5 border border-slate-300 rounded-md text-right focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full pl-6 md:pl-7 p-2 md:p-2.5 text-sm md:text-base border border-slate-300 rounded-md text-right focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
                         </div>
@@ -1550,7 +1602,7 @@ const POS = () => {
                               value={method.reference}
                               onChange={(e) => updatePaymentMethod(index, 'reference', e.target.value)}
                               placeholder={method.type === 'tarjeta' ? "Últimos 4 dígitos" : "# de referencia"}
-                              className="w-full p-2.5 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full p-2 md:p-2.5 text-sm md:text-base border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
                         )}
@@ -1559,17 +1611,17 @@ const POS = () => {
                   ))}
                 </div>
                 
-                <div className="flex justify-between mt-4 p-3 bg-slate-100 rounded-lg">
-                  <span className="font-medium text-slate-700">Total pagado:</span>
-                  <span className={`font-bold ${Math.abs(totalPaymentAmount() - calculateTotal()) > 0.01 ? 'text-red-600' : 'text-emerald-600'}`}>
+                <div className="flex justify-between mt-3 md:mt-4 p-2 md:p-3 bg-slate-100 rounded-lg">
+                  <span className="font-medium text-sm md:text-base text-slate-700">Total pagado:</span>
+                  <span className={`font-bold text-sm md:text-base ${Math.abs(totalPaymentAmount() - calculateTotal()) > 0.01 ? 'text-red-600' : 'text-emerald-600'}`}>
                     {formatCurrency(totalPaymentAmount())}
                   </span>
                 </div>
                 
                 {Math.abs(totalPaymentAmount() - calculateTotal()) > 0.01 && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mt-2 flex items-center gap-2">
-                    <FaExclamationTriangle />
-                    <p className="text-sm">
+                  <div className="bg-red-50 border border-red-200 text-red-700 p-2 md:p-3 rounded-lg mt-2 flex items-center gap-1 md:gap-2">
+                    <FaExclamationTriangle size={12} />
+                    <p className="text-xs md:text-sm">
                       {totalPaymentAmount() < calculateTotal() 
                         ? `Falta: ${formatCurrency(calculateTotal() - totalPaymentAmount())}` 
                         : `Sobra: ${formatCurrency(totalPaymentAmount() - calculateTotal())}`}
@@ -1579,10 +1631,10 @@ const POS = () => {
               </div>
               
               {/* Botones de acción */}
-              <div className="flex justify-end space-x-3 mt-8 pt-3 border-t border-slate-200">
+              <div className="flex flex-col-reverse md:flex-row md:justify-end gap-2 md:space-x-3 mt-4 md:mt-8 pt-3 border-t border-slate-200">
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="px-5 py-2.5 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-100 transition-colors font-medium"
+                  className="w-full md:w-auto px-4 md:px-5 py-2 md:py-2.5 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-100 transition-colors font-medium text-sm md:text-base"
                   disabled={isProcessing}
                 >
                   Cancelar
@@ -1590,7 +1642,7 @@ const POS = () => {
                 <button
                   onClick={handleCheckout}
                   disabled={isProcessing || Math.abs(totalPaymentAmount() - calculateTotal()) > 0.01}
-                  className={`px-5 py-2.5 rounded-md text-white font-medium flex items-center ${
+                  className={`w-full md:w-auto px-4 md:px-5 py-2 md:py-2.5 rounded-md text-white font-medium flex items-center justify-center ${
                     isProcessing || Math.abs(totalPaymentAmount() - calculateTotal()) > 0.01 
                       ? 'bg-slate-300 cursor-not-allowed' 
                       : 'bg-blue-600 hover:bg-blue-700 transition-colors'
@@ -1598,16 +1650,16 @@ const POS = () => {
                 >
                   {isProcessing ? (
                     <>
-                      <svg className="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin h-4 w-4 md:h-5 md:w-5 mr-1.5 md:mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Procesando...
+                      <span className="text-sm md:text-base">Procesando...</span>
                     </>
                   ) : (
                     <>
-                      <FaArrowRight size={14} className="mr-2" />
-                      Finalizar Venta
+                      <FaArrowRight size={12} className="mr-1.5 md:mr-2" />
+                      <span className="text-sm md:text-base">Finalizar Venta</span>
                     </>
                   )}
                 </button>
@@ -1618,37 +1670,37 @@ const POS = () => {
         
         {/* Modal de Comprobante */}
         {showReceiptModal && sale && (
-          <div className="fixed inset-0 bg-slate-800 bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto animate-fadeIn">
-              <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-200">
-                <div className="flex items-center gap-2">
-                  <FaPrint className="text-blue-600" size={18} />
-                  <h3 className="font-bold text-xl text-slate-800">Comprobante de Venta</h3>
+          <div className="fixed inset-0 bg-slate-800 bg-opacity-75 flex items-center justify-center z-50 p-2">
+            <div className="bg-white rounded-lg shadow-xl p-3 md:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto animate-fadeIn">
+              <div className="flex items-center justify-between mb-2 md:mb-5 pb-2 md:pb-3 border-b border-slate-200">
+                <div className="flex items-center gap-1 md:gap-2">
+                  <FaPrint className="text-blue-600" size={14} />
+                  <h3 className="font-bold text-base md:text-xl text-slate-800">Comprobante de Venta</h3>
                 </div>
-                <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded-full">
+                <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 md:px-2.5 md:py-1 rounded-full">
                   #{sale.id}
                 </span>
               </div>
               
-              <div className="mb-5 bg-slate-50 p-4 rounded-lg">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="mb-3 md:mb-5 bg-slate-50 p-3 md:p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-2 md:gap-3">
                   <div>
                     <p className="text-xs text-slate-500 mb-0.5">Fecha:</p>
-                    <p className="font-medium text-slate-800">{new Date(sale.createdAt).toLocaleString()}</p>
+                    <p className="font-medium text-xs md:text-sm text-slate-800">{new Date(sale.createdAt).toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 mb-0.5">Vendedor:</p>
-                    <p className="font-medium text-slate-800">{sale.user ? sale.user.name : 'No especificado'}</p>
+                    <p className="font-medium text-xs md:text-sm text-slate-800">{sale.user ? sale.user.name : 'No especificado'}</p>
                   </div>
                 </div>
                 
                 {sale.client && (
-                  <div className="mt-3 pt-3 border-t border-slate-200">
+                  <div className="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-slate-200">
                     <p className="text-xs text-slate-500 mb-0.5">Cliente:</p>
-                    <p className="font-medium text-slate-800">{sale.client.name || 'Sin nombre'}</p>
+                    <p className="font-medium text-xs md:text-sm text-slate-800">{sale.client.name || 'Sin nombre'}</p>
                     {sale.client.document && (
-                      <p className="text-sm text-slate-600 flex items-center mt-1">
-                        <span className="w-5 h-5 inline-flex items-center justify-center bg-blue-100 text-blue-800 rounded-full mr-2 text-xs">ID</span>
+                      <p className="text-xs md:text-sm text-slate-600 flex items-center mt-1">
+                        <span className="w-4 h-4 md:w-5 md:h-5 inline-flex items-center justify-center bg-blue-100 text-blue-800 rounded-full mr-1.5 md:mr-2 text-xs">ID</span>
                         {sale.client.document}
                       </p>
                     )}
@@ -1656,28 +1708,28 @@ const POS = () => {
                 )}
               </div>
               
-              <div className="mb-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <FaShoppingCart className="text-slate-600" size={14} />
-                  <h4 className="font-semibold text-slate-700">Detalle de productos</h4>
+              <div className="mb-3 md:mb-5">
+                <div className="flex items-center gap-1 md:gap-2 mb-2 md:mb-3">
+                  <FaShoppingCart className="text-slate-600" size={12} />
+                  <h4 className="font-semibold text-sm md:text-base text-slate-700">Detalle de productos</h4>
                 </div>
                 <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-xs md:text-sm">
                     <thead className="bg-slate-50">
                       <tr>
-                        <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600">Producto</th>
-                        <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600">Cant.</th>
-                        <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Precio</th>
-                        <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Total</th>
+                        <th className="px-2 md:px-3 py-1.5 md:py-2 text-left text-xs font-semibold text-slate-600">Producto</th>
+                        <th className="px-1 md:px-3 py-1.5 md:py-2 text-center text-xs font-semibold text-slate-600">Cant.</th>
+                        <th className="px-1 md:px-3 py-1.5 md:py-2 text-right text-xs font-semibold text-slate-600">Precio</th>
+                        <th className="px-2 md:px-3 py-1.5 md:py-2 text-right text-xs font-semibold text-slate-600">Total</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
                       {sale.saleItems && sale.saleItems.map(item => (
                         <tr key={item.id} className="hover:bg-slate-50">
-                          <td className="px-3 py-2.5 text-slate-800">{item.product.name}</td>
-                          <td className="px-3 py-2.5 text-center text-slate-800">{item.quantity}</td>
-                          <td className="px-3 py-2.5 text-right text-slate-600">{formatCurrency(item.unitPrice)}</td>
-                          <td className="px-3 py-2.5 text-right font-medium text-slate-800">{formatCurrency(item.totalPrice)}</td>
+                          <td className="px-2 md:px-3 py-2 md:py-2.5 text-slate-800 truncate max-w-[100px] md:max-w-full">{item.product.name}</td>
+                          <td className="px-1 md:px-3 py-2 md:py-2.5 text-center text-slate-800">{item.quantity}</td>
+                          <td className="px-1 md:px-3 py-2 md:py-2.5 text-right text-slate-600">{formatCurrency(item.unitPrice)}</td>
+                          <td className="px-2 md:px-3 py-2 md:py-2.5 text-right font-medium text-slate-800">{formatCurrency(item.totalPrice)}</td>
                         </tr>
                       ))}
                     </tbody>

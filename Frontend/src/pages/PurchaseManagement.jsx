@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { formatCurrency } from '../utils/formatters';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import '../styles/SupplierManagement.css';
 
 const PurchaseManagement = () => {
   const [purchases, setPurchases] = useState([]);
@@ -271,12 +272,19 @@ const PurchaseManagement = () => {
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6 animate-fadeIn">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Gestión de Compras</h1>
+        <h1 className="text-2xl font-bold text-gray-800 flex items-center">
+          <div className="icon-wrapper mr-3">
+            <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+          </div>
+          <span className="header-gradient bg-clip-text text-transparent">Gestión de Compras</span>
+        </h1>
         <button
           onClick={openPurchaseModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center"
+          className="btn-primary btn-glow flex items-center"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -286,150 +294,228 @@ const PurchaseManagement = () => {
       </div>
 
       {/* Filtros de búsqueda */}
-      <div className="bg-white shadow rounded-lg p-4 mb-6">
-        <h2 className="font-semibold text-lg mb-3">Filtros</h2>
+      <div className="card-neomorphic p-5 mb-6 animate-slideInLeft">
+        <h2 className="font-semibold text-lg mb-3 flex items-center text-purple-700">
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          Filtros de Búsqueda
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
-            <select
-              name="supplierId"
-              value={searchQuery.supplierId}
-              onChange={handleSearchInputChange}
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Todos los proveedores</option>
-              {suppliers.map(supplier => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.name}
-                </option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Proveedor</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <select
+                name="supplierId"
+                value={searchQuery.supplierId}
+                onChange={handleSearchInputChange}
+                className="input-neomorphic w-full pl-10 pr-3 py-2 appearance-none"
+              >
+                <option value="">Todos los proveedores</option>
+                {suppliers.map(supplier => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Desde</label>
-            <input
-              type="date"
-              name="startDate"
-              value={searchQuery.startDate}
-              onChange={handleSearchInputChange}
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-2">Fecha Desde</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <input
+                type="date"
+                name="startDate"
+                value={searchQuery.startDate}
+                onChange={handleSearchInputChange}
+                className="input-neomorphic w-full pl-10 pr-3 py-2"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Hasta</label>
-            <input
-              type="date"
-              name="endDate"
-              value={searchQuery.endDate}
-              onChange={handleSearchInputChange}
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-2">Fecha Hasta</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <input
+                type="date"
+                name="endDate"
+                value={searchQuery.endDate}
+                onChange={handleSearchInputChange}
+                className="input-neomorphic w-full pl-10 pr-3 py-2"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-            <select
-              name="status"
-              value={searchQuery.status}
-              onChange={handleSearchInputChange}
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Todos los estados</option>
-              <option value="pending">Pendiente</option>
-              <option value="partially_paid">Parcialmente Pagado</option>
-              <option value="paid">Pagado</option>
-            </select>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <select
+                name="status"
+                value={searchQuery.status}
+                onChange={handleSearchInputChange}
+                className="input-neomorphic w-full pl-10 pr-3 py-2 appearance-none"
+              >
+                <option value="">Todos los estados</option>
+                <option value="pending">Pendiente</option>
+                <option value="partially_paid">Parcialmente Pagado</option>
+                <option value="paid">Pagado</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
         
-        <div className="mt-4 flex justify-end">
+        <div className="mt-5 flex justify-end">
           <button
             onClick={resetFilters}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 mr-2"
+            className="px-4 py-2 bg-white shadow-sm text-gray-700 rounded-md hover:bg-gray-50 transition-all mr-3 flex items-center"
           >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
             Limpiar Filtros
           </button>
           <button
             onClick={() => setPagination(prev => ({ ...prev, page: 1 }))}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="btn-primary flex items-center"
           >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
             Buscar
           </button>
         </div>
       </div>
 
       {/* Tabla de compras */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="card-neomorphic animate-slideInRight">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Factura</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Pagado</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+          <table className="min-w-full">
+            <thead>
+              <tr className="table-header">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Fecha</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Factura</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Proveedor</th>
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Total</th>
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Pagado</th>
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Estado</th>
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-4 text-center">
-                    <div className="flex justify-center">
-                      <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
+                  <td colSpan="7" className="px-6 py-10 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="loading-spinner mb-3"></div>
+                      <p className="text-sm text-gray-500 mt-2">Cargando compras...</p>
                     </div>
                   </td>
                 </tr>
               ) : purchases.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
-                    No se encontraron compras
+                  <td colSpan="7" className="px-6 py-10">
+                    <div className="empty-state">
+                      <svg className="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                      <h3 className="text-lg font-medium text-gray-900 mb-1">No hay compras</h3>
+                      <p className="text-sm text-gray-500">No se encontraron compras con los criterios de búsqueda.</p>
+                      <button 
+                        onClick={openPurchaseModal} 
+                        className="mt-3 btn-primary flex items-center mx-auto"
+                      >
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Registrar nueva compra
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ) : (
-                purchases.map(purchase => (
-                  <tr key={purchase.id} className="hover:bg-gray-50">
+                purchases.map((purchase, index) => (
+                  <tr key={purchase.id} className="table-row" style={{animationDelay: `${index * 0.05}s`}}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(purchase.purchaseDate).toLocaleDateString()}
+                      <div className="flex items-center">
+                        <svg className="w-4 h-4 mr-1 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {new Date(purchase.purchaseDate).toLocaleDateString()}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="font-medium text-gray-900">
                         {purchase.invoiceNumber || `#${purchase.id}`}
                       </div>
                       {purchase.dueDate && (
-                        <div className="text-xs text-gray-500">
-                          Vence: {new Date(purchase.dueDate).toLocaleDateString()}
+                        <div className="text-xs mt-1">
+                          <span className="badge badge-warning">
+                            Vence: {new Date(purchase.dueDate).toLocaleDateString()}
+                          </span>
                         </div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{purchase.supplier?.name}</div>
+                      <div className="font-medium text-gray-900 flex items-center">
+                        <svg className="w-4 h-4 mr-1 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        {purchase.supplier?.name}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
-                      {formatCurrency(purchase.totalAmount)}
+                      <span className="badge badge-primary">
+                        {formatCurrency(purchase.totalAmount)}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                      <div className={`font-medium ${purchase.paidAmount >= purchase.totalAmount ? 'text-green-600' : 'text-gray-900'}`}>
+                      <div className={`font-medium ${purchase.paidAmount >= purchase.totalAmount ? 'badge badge-success' : 'badge badge-primary'}`}>
                         {formatCurrency(purchase.paidAmount)}
                       </div>
                       {purchase.paidAmount < purchase.totalAmount && (
-                        <div className="text-xs text-red-600">
-                          {formatCurrency(purchase.totalAmount - purchase.paidAmount)} pendiente
+                        <div className="text-xs mt-1">
+                          <span className="badge badge-danger">
+                            {formatCurrency(purchase.totalAmount - purchase.paidAmount)} pendiente
+                          </span>
                         </div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        purchase.status === 'paid' ? 'bg-green-100 text-green-800' :
-                        purchase.status === 'partially_paid' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
+                      <span className={`badge ${
+                        purchase.status === 'paid' ? 'badge-success' :
+                        purchase.status === 'partially_paid' ? 'badge-warning' :
+                        'badge-danger'
                       }`}>
                         {purchase.status === 'paid' ? 'Pagado' :
                          purchase.status === 'partially_paid' ? 'Parcial' : 'Pendiente'}
@@ -438,8 +524,12 @@ const PurchaseManagement = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <button
                         onClick={() => handleViewPurchase(purchase)}
-                        className="text-indigo-600 hover:text-indigo-900 mx-1"
+                        className="text-indigo-600 hover:text-indigo-900 mx-1 hover:underline flex items-center justify-center"
                       >
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
                         Detalles
                       </button>
                     </td>
@@ -453,22 +543,27 @@ const PurchaseManagement = () => {
 
       {/* Paginación */}
       {totalPages > 0 && (
-        <div className="mt-6 flex justify-between items-center">
-          <div className="text-sm text-gray-700">
-            Mostrando <span className="font-medium">{purchases.length}</span> de{' '}
-            <span className="font-medium">{pagination.total}</span> compras
+        <div className="mt-6 flex justify-between items-center animate-fadeIn">
+          <div className="text-sm text-gray-700 bg-white p-2 rounded-lg shadow-sm">
+            Mostrando <span className="font-medium text-purple-600">{purchases.length}</span> de{' '}
+            <span className="font-medium text-purple-600">{pagination.total}</span> compras
           </div>
           <div className="flex space-x-2">
             <button
               onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
               disabled={pagination.page <= 1}
-              className={`px-3 py-1 rounded ${
+              className={`px-3 py-1 rounded-md transition-all transform ${
                 pagination.page <= 1
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg hover:-translate-y-0.5'
               }`}
             >
-              Anterior
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Anterior
+              </div>
             </button>
             {/* Números de página */}
             <div className="flex items-center space-x-1">
@@ -488,10 +583,10 @@ const PurchaseManagement = () => {
                   <button
                     key={i}
                     onClick={() => setPagination(prev => ({ ...prev, page: pageToShow }))}
-                    className={`px-3 py-1 rounded ${
+                    className={`w-8 h-8 flex items-center justify-center rounded-md transition-all ${
                       pagination.page === pageToShow
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 hover:shadow'
                     }`}
                   >
                     {pageToShow}
@@ -502,13 +597,18 @@ const PurchaseManagement = () => {
             <button
               onClick={() => setPagination(prev => ({ ...prev, page: Math.min(totalPages, prev.page + 1) }))}
               disabled={pagination.page >= totalPages}
-              className={`px-3 py-1 rounded ${
+              className={`px-3 py-1 rounded-md transition-all transform ${
                 pagination.page >= totalPages
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg hover:-translate-y-0.5'
               }`}
             >
-              Siguiente
+              <div className="flex items-center">
+                Siguiente
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </div>
             </button>
           </div>
         </div>
@@ -517,36 +617,56 @@ const PurchaseManagement = () => {
       {/* Modal para crear una nueva compra */}
       {isPurchaseModalOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 relative max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setIsPurchaseModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+          <div className="modal-card w-full max-w-4xl relative max-h-[90vh] overflow-y-auto">
+            <div className="modal-header flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                Registrar Nueva Compra
+              </h2>
+              <button
+                onClick={() => setIsPurchaseModalOpen(false)}
+                className="text-white hover:text-gray-200 focus:outline-none"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             
-            <h2 className="text-xl font-bold mb-4">Registrar Nueva Compra</h2>
+            <div className="p-6 bg-white rounded-b-lg">
             
             <form onSubmit={handleSubmitPurchase}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Proveedor*</label>
-                  <select
-                    name="supplierId"
-                    value={purchaseFormData.supplierId}
-                    onChange={handlePurchaseFormChange}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Seleccionar proveedor</option>
-                    {suppliers.map(supplier => (
-                      <option key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <select
+                      name="supplierId"
+                      value={purchaseFormData.supplierId}
+                      onChange={handlePurchaseFormChange}
+                      className="input-neomorphic w-full pl-10 pr-3 py-2 appearance-none"
+                      required
+                    >
+                      <option value="">Seleccionar proveedor</option>
+                      {suppliers.map(supplier => (
+                        <option key={supplier.id} value={supplier.id}>
+                          {supplier.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
                 
                 <div>
@@ -753,33 +873,44 @@ const PurchaseManagement = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="btn-primary"
                   disabled={purchaseFormData.items.length === 0}
                 >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
                   Registrar Compra
                 </button>
               </div>
             </form>
           </div>
         </div>
+      </div>
       )}
 
       {/* Modal de detalles de compra */}
       {isPurchaseDetailModalOpen && selectedPurchase && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 relative max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setIsPurchaseDetailModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+          <div className="modal-card w-full max-w-4xl relative max-h-[90vh] overflow-y-auto">
+            <div className="modal-header flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                Detalle de Compra {selectedPurchase.invoiceNumber || `#${selectedPurchase.id}`}
+              </h2>
+              <button
+                onClick={() => setIsPurchaseDetailModalOpen(false)}
+                className="text-white hover:text-gray-200 focus:outline-none"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             
-            <h2 className="text-xl font-bold mb-4">
-              Detalle de Compra {selectedPurchase.invoiceNumber || `#${selectedPurchase.id}`}
-            </h2>
+            <div className="p-6 bg-white rounded-b-lg">
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="bg-gray-50 p-4 rounded-lg">
@@ -925,13 +1056,17 @@ const PurchaseManagement = () => {
             <div className="flex justify-end">
               <button
                 onClick={() => setIsPurchaseDetailModalOpen(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                className="btn-primary flex items-center"
               >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
                 Cerrar
               </button>
             </div>
           </div>
         </div>
+      </div>
       )}
     </div>
   );

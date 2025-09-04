@@ -1,11 +1,16 @@
 import axios from 'axios';
 
+// URL fija para la API
+const API_BASE_URL = 'http://192.168.0.30:3000/api';
+
 // Configuración base de axios
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  // Timeout para detectar problemas de red
+  timeout: 15000, // 15 segundos
 });
 
 // Interceptor para agregar el token de autenticación
@@ -22,9 +27,65 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Almacena información sobre errores de red para mostrar mensajes más claros
+let networkErrorInfo = {
+  count: 0,
+  lastError: null,
+  timestamp: null
+};
+
+// Evento personalizado para notificar a los componentes sobre problemas de red
+export const API_ERROR_EVENT = 'api-connection-error';
+export const API_RECONNECT_EVENT = 'api-reconnect-success';
+
+// Función para emitir eventos de error de API
+const emitApiErrorEvent = (errorType, errorDetails) => {
+  const event = new CustomEvent(API_ERROR_EVENT, { 
+    detail: { 
+      type: errorType, 
+      message: errorDetails.message,
+      code: errorDetails.code,
+      timestamp: new Date()
+    } 
+  });
+  window.dispatchEvent(event);
+};
+
+// Función para emitir eventos de reconexión exitosa
+const emitApiReconnectEvent = () => {
+  const event = new CustomEvent(API_RECONNECT_EVENT);
+  window.dispatchEvent(event);
+};
+
+// Función para comprobar la conectividad del API
+export const checkApiConnection = async () => {
+  try {
+    await apiClient.get('/health-check');
+    
+    // Si la conexión fue exitosa después de un error, emitir evento de reconexión
+    if (networkErrorInfo.count > 0) {
+      networkErrorInfo.count = 0;
+      networkErrorInfo.lastError = null;
+      emitApiReconnectEvent();
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error al verificar la conexión API:', error);
+    return false;
+  }
+};
+
 // Interceptor para respuestas
 apiClient.interceptors.response.use(
   (response) => {
+    // Si había errores de red anteriores y ahora funciona, resetear contador
+    if (networkErrorInfo.count > 0) {
+      networkErrorInfo.count = 0;
+      networkErrorInfo.lastError = null;
+      // Solo emitir evento de reconexión si antes había error
+      emitApiReconnectEvent();
+    }
     return response;
   },
   (error) => {
@@ -32,7 +93,8 @@ apiClient.interceptors.response.use(
     const silencedEndpoints = [
       '/shifts/active',           // Endpoint que puede fallar
       '/shifts/',                 // Posibles endpoints de turnos que fallen
-      '/totals'                   // Endpoints relacionados con totales
+      '/totals',                  // Endpoints relacionados con totales
+      '/health-check'             // Endpoint para comprobar conectividad
     ];
     
     // Verificar si el error proviene de un endpoint silenciado
@@ -46,21 +108,48 @@ apiClient.interceptors.response.use(
       window.location.href = '/login';
     }
     
+    // Detectar específicamente errores de red
+    const isNetworkError = error.code === 'ERR_NETWORK' || 
+                          (error.message && error.message.includes('Network Error')) ||
+                          (!error.response && error.request);
+    
+    // Para errores de red, incrementar el contador y guardar información
+    if (isNetworkError) {
+      networkErrorInfo.count++;
+      networkErrorInfo.lastError = error;
+      networkErrorInfo.timestamp = new Date();
+      
+      // Solo emitir un evento de error cada 3 errores o cada 10 segundos
+      // para evitar sobrecarga de notificaciones
+      const shouldEmitEvent = networkErrorInfo.count % 3 === 1 || 
+                             (networkErrorInfo.timestamp && 
+                             (new Date() - networkErrorInfo.timestamp > 10000));
+      
+      // Emitir evento solo si no está silenciado y cumple los criterios
+      if (!shouldSilenceError && shouldEmitEvent) {
+        emitApiErrorEvent('network', {
+          message: 'No se pudo conectar al servidor (192.168.0.30)',
+          code: error.code
+        });
+      }
+    }
+    
     // Solo mostrar errores para endpoints que no están silenciados
     if (!shouldSilenceError) {
       // Manejo global de errores
-      console.error('Error en solicitud API:', error);
-      
       if (error.response) {
         // La solicitud fue realizada y el servidor respondió con un código de estado
         // que cae fuera del rango de 2xx
+        console.error('Error en solicitud API:', error);
         console.error('Respuesta del servidor con error:', error.response.data);
         console.error('Estado HTTP:', error.response.status);
       } else if (error.request) {
         // La solicitud fue realizada pero no se recibió respuesta
+        console.error('Error en solicitud API:', error);
         console.error('No se recibió respuesta del servidor');
       } else {
         // Algo ocurrió en la configuración de la solicitud que desencadenó un error
+        console.error('Error en solicitud API:', error);
         console.error('Error al configurar la solicitud:', error.message);
       }
     }

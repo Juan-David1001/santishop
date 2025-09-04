@@ -53,8 +53,6 @@ function Sidebar() {
         setCurrentShift(null);
       }
     } catch (err) {
-      console.error('Error loading active shifts:', err);
-      
       // Si el primer método falla, intentar con el otro método (con parámetro active=true)
       try {
         const fallbackResponse = await apiClient.get('/shifts', { params: { active: true } });
@@ -65,7 +63,6 @@ function Sidebar() {
           setCurrentShift(null);
         }
       } catch (fallbackErr) {
-        console.error('Error en segundo intento para cargar turnos:', fallbackErr);
         // Manejar el caso de error silenciosamente para no romper la UI
         setActiveShifts([]);
         setCurrentShift(null);
@@ -83,6 +80,13 @@ function Sidebar() {
     setIsOpen(!isOpen);
   };
 
+  // Controlar clic en el overlay para cerrar modal en móviles
+  const handleOverlayClick = () => {
+    if (isMobile) {
+      setIsOpen(false);
+    }
+  };
+
   return (
     <>
       {/* Mobile hamburger */}
@@ -94,20 +98,20 @@ function Sidebar() {
         >
           <RiMenuLine className="w-6 h-6" />
         </button>
-        <span className="font-bold text-xl text-white">Sistema de Ventas</span>
+        <span className="font-bold text-xl text-white truncate mx-2">Sistema de Ventas</span>
         <div className="w-10"></div> {/* Spacer for balance */}
       </div>
 
       {/* Overlay for mobile */}
       {isOpen && isMobile && (
-        <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-20" onClick={toggleSidebar}></div>
+        <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-20" onClick={handleOverlayClick}></div>
       )}
 
       {/* Sidebar */}
-      <aside className={`${isOpen ? 'translate-x-0' : '-translate-x-full'} fixed top-0 left-0 h-full w-72 bg-slate-900 text-white shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 z-30 flex flex-col overflow-hidden`}>
-        <div className="flex flex-col p-5 border-b border-slate-800/80 bg-slate-800/30">
+      <aside className={`${isOpen ? 'translate-x-0' : '-translate-x-full'} fixed top-0 left-0 h-full w-64 sm:w-72 bg-slate-900 text-white shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 z-30 flex flex-col overflow-hidden`}>
+        <div className="flex flex-col p-4 sm:p-5 border-b border-slate-800/80 bg-slate-800/30">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl font-bold text-white">Sistema de Ventas</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">Sistema de Ventas</h1>
             {isMobile && (
               <button 
                 onClick={toggleSidebar} 
@@ -301,7 +305,7 @@ function Sidebar() {
         <div className="p-4 border-t border-slate-800/70 bg-slate-800/20">
           {/* Indicador de turno activo */}
           {currentShift ? (
-            <div className="mb-4 bg-emerald-500/10 rounded-lg p-3 text-sm border border-emerald-500/20 shadow-sm">
+            <div className="mb-0 bg-emerald-500/10 rounded-lg p-3 text-sm border border-emerald-500/20 shadow-sm">
               <div className="flex items-center space-x-2 mb-1">
                 <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></span>
                 <p className="font-medium text-emerald-300">Turno Activo</p>
@@ -316,7 +320,7 @@ function Sidebar() {
               <p className="text-slate-400 text-xs mt-1">ID: {currentShift.id}</p>
             </div>
           ) : (
-            <div className="mb-4 bg-red-500/10 rounded-lg p-3 text-sm border border-red-500/20 shadow-sm">
+            <div className="mb-0 bg-red-500/10 rounded-lg p-3 text-sm border border-red-500/20 shadow-sm">
               <div className="flex items-center space-x-2">
                 <span className="h-2 w-2 bg-red-500 rounded-full"></span>
                 <p className="font-medium text-red-300">No hay turno activo</p>
@@ -328,8 +332,6 @@ function Sidebar() {
               </p>
             </div>
           )}
-          
-        
         </div>
       </aside>
     </>
