@@ -17,6 +17,7 @@ import POS from './pages/POS'
 import ClientManagement from './pages/ClientManagement'
 import SupplierManagement from './pages/SupplierManagement'
 import PurchaseManagement from './pages/PurchaseManagement'
+import BarcodeScanner from './pages/BarcodeScanner'
 
 function App() {
   return (
@@ -81,6 +82,9 @@ function App() {
           <Route path="/suppliers" element={<SupplierManagement />} />
           <Route path="/purchases" element={<PurchaseManagement />} />
         </Route>
+        
+        {/* Ruta para el escáner de códigos de barras (sin Layout) */}
+        <Route path="/scanner" element={<BarcodeScanner />} />
       </Routes>
     </Router>
   )

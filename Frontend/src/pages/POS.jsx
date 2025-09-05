@@ -7,7 +7,8 @@ import {
   FaSearch, FaShoppingCart, FaUser, FaPlus, FaTimes, 
   FaTrash, FaMoneyBillWave, FaCreditCard, FaExchangeAlt, 
   FaPrint, FaBarcode, FaTag, FaEdit, FaArrowRight,
-  FaExclamationTriangle, FaRegClock, FaRegLightbulb
+  FaExclamationTriangle, FaRegClock, FaRegLightbulb,
+  FaQrcode, FaMobileAlt
 } from 'react-icons/fa';
 import { MdPointOfSale, MdDiscount, MdPayment, MdOutlineInventory2, MdReceiptLong, MdLocalOffer } from 'react-icons/md';
 
@@ -40,6 +41,14 @@ const POS = () => {
   const [notes, setNotes] = useState('');
   const [sale, setSale] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  
+  // Estados para el escáner de códigos de barras
+  const [showScannerModal, setShowScannerModal] = useState(false);
+  const [scannerSessionId, setScannerSessionId] = useState('');
+  const [scannerConnected, setScannerConnected] = useState(false);
+  const [scannerSocketInstance, setScannerSocketInstance] = useState(null);
+  const [lastScannedCode, setLastScannedCode] = useState('');
+  const [lastScanTimestamp, setLastScanTimestamp] = useState(0); // Timestamp para evitar escaneos duplicados
 
   const searchInputRef = useRef(null);
   const customerSearchRef = useRef(null);
@@ -53,6 +62,20 @@ const POS = () => {
     if (searchInputRef.current) {
       searchInputRef.current.focus();
     }
+    
+    // Generar un ID de sesión único para el escáner al cargar
+    const sessionId = generateSessionId();
+    setScannerSessionId(sessionId);
+    
+    // Inicializar WebSocket server para el escáner
+    initScannerWebSocket(sessionId);
+    
+    // Limpiar la conexión WebSocket al desmontar el componente
+    return () => {
+      if (scannerSocketInstance) {
+        scannerSocketInstance.close();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -474,6 +497,377 @@ const POS = () => {
     }
   };
 
+  // Función para generar un ID de sesión aleatorio para el escáner
+  const generateSessionId = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let sessionId = '';
+    for (let i = 0; i < 8; i++) {
+      sessionId += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return sessionId;
+  };
+  
+  // Inicializar conexión WebSocket para el escáner
+  const initScannerWebSocket = (sessionId) => {
+    // Cerrar cualquier conexión previa
+    if (scannerSocketInstance) {
+      // Limpiar temporizadores existentes si los hay
+      if (scannerSocketInstance._pingInterval) {
+        clearInterval(scannerSocketInstance._pingInterval);
+      }
+      if (scannerSocketInstance._reconnectTimeout) {
+        clearTimeout(scannerSocketInstance._reconnectTimeout);
+      }
+      
+      // Cerrar la conexión existente
+      scannerSocketInstance.close();
+    }
+    
+    try {
+      // Usar la URL correcta del WebSocket
+      // Usamos la IP fija del servidor backend en lugar del hostname
+      const host = '192.168.0.30'; // IP específica del servidor backend
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      // Forzar el puerto 3000 para la conexión WebSocket, ya que es donde se ejecuta el backend
+      // independientemente del puerto del frontend (5173 en desarrollo, 80/443 en producción)
+      const port = '3000';
+      const wsUrl = `${wsProtocol}//${host}:${port}/api/ws/pos/${sessionId}`;
+      
+      console.log(`Conectando a WebSocket: ${wsUrl}`);
+      console.log('Información de conexión:');
+      console.log(`- Protocolo: ${wsProtocol}`);
+      console.log(`- Host: ${host}`);
+      console.log(`- Puerto: ${port}`);
+      console.log(`- ID de sesión: ${sessionId}`);
+      
+      const ws = new WebSocket(wsUrl);
+      
+      // Configurar un timeout para detectar problemas de conexión
+      const connectionTimeout = setTimeout(() => {
+        if (ws.readyState !== WebSocket.OPEN) {
+          console.error('Timeout de conexión WebSocket');
+          toast.error(`No se pudo establecer la conexión con el servidor WebSocket. Verifica que el servidor esté activo en ${host}:${port}.`, 
+            { id: 'ws-timeout', duration: 6000 });
+          ws.close();
+        }
+      }, 8000); // 8 segundos de timeout
+      
+      ws._connectionTimeout = connectionTimeout;
+      
+      ws.onopen = () => {
+        clearTimeout(ws._connectionTimeout);
+        console.log('Conexión WebSocket establecida para escáner');
+        setScannerConnected(true);
+        toast.success('Servidor de escáner conectado', { id: 'scanner-connected' });
+        
+        // Enviar mensaje de "ping" periódicamente para mantener la conexión viva
+        const pingInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ 
+              type: 'ping', 
+              timestamp: new Date().toISOString() 
+            }));
+          }
+        }, 30000); // Cada 30 segundos
+        
+        ws._pingInterval = pingInterval;
+      };
+      
+      ws.onclose = (event) => {
+        // Limpiar temporizadores
+        clearTimeout(ws._connectionTimeout);
+        clearInterval(ws._pingInterval);
+        
+        console.log(`Conexión WebSocket cerrada: ${event.code} - ${event.reason}`);
+        setScannerConnected(false);
+        
+        if (event.code !== 1000 && event.code !== 1001) { // No son cierres normales
+          toast.error(`Escáner desconectado: ${event.reason || 'Error de conexión'}`, { id: 'scanner-disconnected' });
+          
+          // Intentar reconectar automáticamente después de un retraso
+          if (!ws._isManualClose) {
+            const reconnectTimeout = setTimeout(() => {
+              console.log('Intentando reconexión automática del WebSocket...');
+              initScannerWebSocket(sessionId);
+            }, 5000); // 5 segundos
+            
+            ws._reconnectTimeout = reconnectTimeout;
+          }
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.error('Error en conexión WebSocket para escáner:', error);
+        setScannerConnected(false);
+        toast.error('Error al conectar con el servidor de escáner. Verifica que el servidor esté activo y accesible.', 
+          { id: 'scanner-error', duration: 5000 });
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          // Determinar tipo de datos y manejar adecuadamente
+          if (event.data instanceof Blob) {
+            // Manejar datos binarios (Blob)
+            const reader = new FileReader();
+            reader.onload = () => {
+              try {
+                const text = reader.result;
+                console.log('Mensaje Blob convertido a texto:', text.substring(0, 100) + (text.length > 100 ? '...' : ''));
+                
+                try {
+                  // Intentar parsear como JSON
+                  const data = JSON.parse(text);
+                  console.log('Mensaje Blob procesado como JSON:', data);
+                  processWebSocketMessage(data);
+                } catch (jsonErr) {
+                  console.error('Error al parsear mensaje Blob como JSON:', jsonErr.message);
+                  
+                  // Si falla el parsing, tratar el texto directamente
+                  if (text.includes('barcode') || text.includes('code')) {
+                    // Intentar extraer un código de barras usando expresiones regulares
+                    const codeMatch = text.match(/"code"\s*:\s*"([^"]+)"/);
+                    if (codeMatch && codeMatch[1]) {
+                      console.log('Código de barras extraído manualmente:', codeMatch[1]);
+                      
+                      // Procesar como mensaje de código de barras
+                      processWebSocketMessage({
+                        type: 'barcode',
+                        code: codeMatch[1]
+                      });
+                    } else {
+                      console.error('No se pudo extraer código de barras del texto:', text);
+                    }
+                  }
+                }
+              } catch (err) {
+                console.error('Error al procesar mensaje Blob:', err);
+              }
+            };
+            reader.readAsText(event.data);
+            return;
+          } else if (typeof event.data === 'string') {
+            // Manejar datos de texto normal
+            try {
+              const data = JSON.parse(event.data);
+              console.log('Mensaje WebSocket recibido:', data);
+              processWebSocketMessage(data);
+            } catch (jsonErr) {
+              console.error('Error al parsear mensaje de texto como JSON:', jsonErr.message);
+              console.error('Contenido del mensaje de texto:', event.data.substring(0, 200) + (event.data.length > 200 ? '...' : ''));
+              
+              // Similar al caso de Blob, tratar de extraer código de barras si es posible
+              if (event.data.includes('barcode') || event.data.includes('code')) {
+                const codeMatch = event.data.match(/"code"\s*:\s*"([^"]+)"/);
+                if (codeMatch && codeMatch[1]) {
+                  console.log('Código de barras extraído manualmente de texto:', codeMatch[1]);
+                  processWebSocketMessage({
+                    type: 'barcode',
+                    code: codeMatch[1]
+                  });
+                }
+              }
+            }
+          } else {
+            // Otro tipo de datos (ArrayBuffer, etc.)
+            console.warn('Tipo de mensaje WebSocket no manejado:', typeof event.data);
+            console.warn('Intentando convertir a texto...');
+            
+            try {
+              const text = event.data.toString();
+              console.log('Mensaje convertido a texto:', text.substring(0, 100) + (text.length > 100 ? '...' : ''));
+              
+              // Intentar parsear como JSON
+              try {
+                const data = JSON.parse(text);
+                console.log('Mensaje procesado como JSON:', data);
+                processWebSocketMessage(data);
+              } catch (jsonErr) {
+                console.error('Error al parsear como JSON después de conversión:', jsonErr.message);
+              }
+            } catch (convErr) {
+              console.error('Error al convertir mensaje a texto:', convErr.message);
+            }
+          }
+        } catch (error) {
+          console.error('Error general al procesar mensaje del escáner:', error);
+          console.error('Tipo de mensaje:', typeof event.data);
+          console.error('Contenido del mensaje:', 
+            event.data instanceof Blob ? '[Blob]' : 
+            (typeof event.data === 'string' && event.data.length > 100) ? 
+              event.data.substring(0, 100) + '...' : 
+              String(event.data));
+        }
+      };
+      
+      // Función para procesar los mensajes WebSocket según su tipo
+      const processWebSocketMessage = (data) => {
+        // Manejar diferentes tipos de mensajes
+        switch (data.type) {
+          case 'barcode':
+            if (data.code) {
+              handleReceivedBarcode(data.code);
+            }
+            break;
+            
+          case 'scanner_status':
+            if (data.status === 'connected') {
+              // Controlar duplicados con una marca de tiempo
+              const now = Date.now();
+              const lastConnectTime = ws._lastScannerConnected || 0;
+              
+              // Solo mostrar la notificación si han pasado al menos 5 segundos desde la última
+              if (now - lastConnectTime > 5000) {
+                toast.success('Dispositivo móvil conectado como escáner', { id: 'mobile-connected' });
+                ws._lastScannerConnected = now;
+              }
+              setScannerConnected(true);
+            } else if (data.status === 'disconnected') {
+              // Controlar duplicados con una marca de tiempo
+              const now = Date.now();
+              const lastDisconnectTime = ws._lastScannerDisconnected || 0;
+              
+              // Solo mostrar la notificación si han pasado al menos 5 segundos desde la última
+              if (now - lastDisconnectTime > 5000) {
+                toast.error('Dispositivo móvil desconectado', { id: 'mobile-disconnected' });
+                ws._lastScannerDisconnected = now;
+              }
+              setScannerConnected(false);
+            }
+            break;
+            
+          case 'connection':
+            if (data.status === 'connected') {
+              console.log('Conexión WebSocket confirmada por el servidor');
+              toast.success('Servidor WebSocket conectado correctamente', { id: 'ws-connected' });
+              
+              // Enviar confirmación de conexión
+              ws.send(JSON.stringify({
+                type: 'connection_confirmed',
+                sessionId: sessionId,
+                deviceInfo: {
+                  userAgent: navigator.userAgent,
+                  platform: navigator.platform,
+                  type: 'pos'
+                },
+                timestamp: new Date().toISOString()
+              }));
+            }
+            break;
+            
+          case 'heartbeat':
+            // Responder al heartbeat
+            ws.send(JSON.stringify({
+              type: 'heartbeat_response',
+              timestamp: new Date().toISOString()
+            }));
+            break;
+            
+          case 'error':
+            console.error('Error reportado por el servidor WebSocket:', data.message);
+            toast.error(`Error de conexión: ${data.message}`, { id: 'ws-error' });
+            break;
+            
+          case 'server_shutdown':
+            toast.warning('El servidor se está reiniciando. La conexión se restaurará automáticamente.', 
+              { id: 'server-shutdown', duration: 5000 });
+            break;
+        }
+      };
+      
+      // Guardar estado para saber si el cierre es manual o no
+      ws._isManualClose = false;
+      
+      // Envolver el método close original para marcar cierres manuales
+      const originalClose = ws.close;
+      ws.close = function(code, reason) {
+        ws._isManualClose = true;
+        clearTimeout(ws._connectionTimeout);
+        clearInterval(ws._pingInterval);
+        clearTimeout(ws._reconnectTimeout);
+        return originalClose.call(this, code, reason);
+      };
+      
+      setScannerSocketInstance(ws);
+    } catch (error) {
+      console.error('Error al inicializar WebSocket para escáner:', error);
+      toast.error(`Error al inicializar el servidor de escáner: ${error.message}`, 
+        { id: 'scanner-init-error', duration: 5000 });
+    }
+  };
+  
+  // Manejar código de barras recibido del escáner móvil
+  const handleReceivedBarcode = (code) => {
+    // Validar que sea un código válido (evitar duplicados y entradas vacías)
+    if (!code || code.trim() === '') {
+      console.warn('Código de barras vacío recibido');
+      return;
+    }
+    
+    // Evitar procesamiento duplicado usando un timestamp
+    const now = Date.now();
+    if (lastScannedCode === code && now - lastScanTimestamp < 2000) {
+      console.log('Ignorando código duplicado (recibido dentro de 2 segundos)');
+      return;
+    }
+    
+    // Actualizar estado y guardar timestamp
+    setLastScannedCode(code);
+    setLastScanTimestamp(now);
+    
+    // Notificar al usuario
+    toast.success(`Código escaneado: ${code}`, { id: 'barcode-scanned' });
+    
+    // Reproducir sonido de éxito si está disponible
+    try {
+      const scanSound = new Audio('/assets/scan-beep.mp3');
+      scanSound.play().catch(e => console.log('No se pudo reproducir sonido de escaneo'));
+    } catch (e) {
+      // Ignorar errores de audio (dispositivos sin soporte de audio)
+    }
+    
+    // Buscar producto por código de barras
+    searchProductByBarcode(code);
+  };
+  
+  // Buscar producto por código de barras
+  const searchProductByBarcode = async (code) => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get(`/sales/search-products?query=${encodeURIComponent(code)}`);
+      const products = response.data.products || [];
+      
+      if (products.length === 1) {
+        // Si encontró exactamente un producto, añadirlo al carrito automáticamente
+        addToCart(products[0]);
+        toast.success(`Producto añadido: ${products[0].name}`, { id: 'product-added' });
+      } else if (products.length > 1) {
+        // Si encontró más de un producto, mostrar resultados para elegir
+        setSearchResults(products);
+        toast.info('Múltiples productos encontrados', { id: 'multiple-products' });
+      } else {
+        // Si no encontró ningún producto
+        toast.error('Producto no encontrado', { id: 'product-not-found' });
+      }
+    } catch (error) {
+      console.error('Error al buscar producto por código de barras:', error);
+      toast.error('Error al buscar producto', { id: 'search-error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Mostrar el modal del escáner con código QR
+  const showScannerQRModal = () => {
+    setShowScannerModal(true);
+  };
+  
+  // Generar URL para el escáner móvil
+  const getScannerUrl = () => {
+    const protocol = window.location.protocol;
+    const host = window.location.host;
+    return `${protocol}//${host}/scanner?session=${scannerSessionId}`;
+  };
+
   const handlePrintReceipt = () => {
     // Abrir ventana de impresión
     const printWindow = window.open('', '', 'height=600,width=400');
@@ -726,6 +1120,36 @@ const POS = () => {
             {searchQuery.length > 0 && searchResults.length === 0 && !isLoading && (
               <div className="mt-2 p-2 sm:p-3 bg-blue-50 rounded-lg border border-blue-100 text-blue-700 text-xs sm:text-sm animate-fadeIn flex items-center">
                 <FaSearch className="mr-1.5 sm:mr-2" size={12} /> Busca por nombre, SKU o código de barras
+              </div>
+            )}
+            
+            {/* Botón para escanear con dispositivo móvil */}
+            <div className="mt-2 sm:mt-3 flex justify-end">
+              <button
+                onClick={showScannerQRModal}
+                className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow text-xs sm:text-sm"
+              >
+                <FaMobileAlt size={12} className="sm:text-base" />
+                <span>Usar móvil como escáner</span>
+                {scannerConnected && (
+                  <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-green-400 animate-pulse"></span>
+                )}
+              </button>
+            </div>
+            
+            {/* Indicador de último código escaneado */}
+            {lastScannedCode && (
+              <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-xs sm:text-sm flex items-center justify-between animate-fadeIn">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <FaBarcode className="text-green-600" />
+                  <span>Último código escaneado: <strong>{lastScannedCode}</strong></span>
+                </div>
+                <button 
+                  onClick={() => setLastScannedCode('')} 
+                  className="text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-100"
+                >
+                  <FaTimes size={10} />
+                </button>
               </div>
             )}
           </div>
@@ -1662,6 +2086,164 @@ const POS = () => {
                       <span className="text-sm md:text-base">Finalizar Venta</span>
                     </>
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Modal de Escáner QR */}
+        {showScannerModal && (
+          <div className="fixed inset-0 bg-slate-800 bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50 p-2">
+            <div className="bg-white rounded-lg shadow-xl p-4 md:p-6 w-full max-w-md animate-fadeIn">
+              <div className="flex items-center justify-between mb-3 md:mb-4 pb-2 md:pb-3 border-b border-slate-200">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 md:p-2 bg-blue-100 text-blue-700 rounded-full">
+                    <FaMobileAlt size={16} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg md:text-xl text-slate-800">Escáner Móvil</h3>
+                    <p className="text-xs md:text-sm text-slate-500">Usa tu celular como escáner de códigos</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowScannerModal(false)}
+                  className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 md:p-2 rounded-full transition-all"
+                >
+                  <FaTimes size={16} />
+                </button>
+              </div>
+              
+              <div className="flex flex-col items-center justify-center mt-2 mb-4 md:mb-5">
+                <div className="bg-white p-2 md:p-3 rounded-lg shadow-md border border-slate-200 mb-3 md:mb-5 relative">
+                  {/* Usando un iframe para el código QR */}
+                  <iframe
+                    title="QR Code"
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getScannerUrl())}`}
+                    width="200"
+                    height="200"
+                    style={{ border: 'none' }}
+                  />
+                  
+                  {/* Indicador de estado encima del QR */}
+                  <div className="absolute -top-2 -right-2">
+                    <div className={`rounded-full p-1 ${scannerConnected ? 'bg-green-500' : 'bg-amber-500'}`}>
+                      <div className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${scannerConnected ? 'bg-green-400 animate-pulse' : 'bg-amber-400'}`}>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-center gap-2 md:gap-3 text-center w-full">
+                  <p className="text-sm md:text-base text-slate-800 font-medium">Escanea el código QR con la cámara de tu móvil</p>
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg w-full text-sm">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <FaMobileAlt className="text-blue-600" />
+                      <span className="font-medium text-blue-800">Instrucciones:</span>
+                    </div>
+                    <ol className="text-left list-decimal ml-5 text-xs space-y-1 text-slate-700">
+                      <li>Abre la cámara de tu móvil</li>
+                      <li>Apunta al código QR mostrado</li>
+                      <li>Toca la notificación que aparece</li>
+                      <li>Acepta los permisos de cámara</li>
+                    </ol>
+                  </div>
+                  
+                  <div className="w-full mt-2">
+                    <p className="text-xs md:text-sm text-slate-600 mb-1">Si no puedes escanear, visita:</p>
+                    <div className="bg-slate-100 p-2 md:p-3 rounded-lg w-full text-center border border-slate-200 relative">
+                      <p className="text-xs md:text-sm font-mono break-all">{getScannerUrl()}</p>
+                      <button 
+                        onClick={() => {
+                          try {
+                            navigator.clipboard.writeText(getScannerUrl());
+                            toast.success('URL copiada al portapapeles', { id: 'url-copied' });
+                          } catch (e) {
+                            console.error('Error al copiar:', e);
+                          }
+                        }}
+                        className="absolute top-1 right-1 p-1 bg-slate-200 hover:bg-slate-300 rounded-md"
+                        title="Copiar URL"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col space-y-3 md:space-y-4">
+                <div className="flex items-center justify-between p-2 md:p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-1 md:gap-2">
+                    <div className="p-1 md:p-1.5 bg-blue-100 text-blue-700 rounded-full">
+                      <FaQrcode size={12} className="md:text-base" />
+                    </div>
+                    <span className="text-xs md:text-sm text-blue-800 font-medium">ID de Sesión:</span>
+                  </div>
+                  <span className="text-xs md:text-sm font-mono bg-white py-1 px-2 md:px-3 rounded border border-blue-200">
+                    {scannerSessionId}
+                  </span>
+                </div>
+                
+                <div className="flex items-center p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+                  <div className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${scannerConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'} mr-2 md:mr-3`}></div>
+                  <div className="flex-1">
+                    <p className="text-xs md:text-sm font-medium text-slate-800">
+                      {scannerConnected ? 'Escáner conectado' : 'Esperando conexión...'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {scannerConnected ? 'Listo para escanear' : 'Escanea el código QR para conectar'}
+                    </p>
+                  </div>
+                  
+                  {!scannerConnected && (
+                    <div className="text-amber-600 animate-pulse flex items-center">
+                      <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="text-xs font-medium">Esperando...</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Sección de solución de problemas */}
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FaRegLightbulb className="text-amber-600" />
+                    <h4 className="text-sm font-medium text-amber-800">Solución de problemas</h4>
+                  </div>
+                  <ul className="text-xs text-amber-800 list-disc pl-5 space-y-1">
+                    <li>Asegúrate de que ambos dispositivos estén en la misma red WiFi</li>
+                    <li>Verifica que el servidor WebSocket esté activo (Puerto 3001)</li>
+                    <li>Si usas firewall, permite conexiones al puerto WebSocket</li>
+                    <li>Prueba reiniciar la conexión con el botón "Reiniciar"</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="flex justify-between mt-5 md:mt-6 pt-3 md:pt-4 border-t border-slate-200">
+                <button
+                  onClick={() => {
+                    // Reiniciar conexión WebSocket
+                    const newSessionId = generateSessionId();
+                    setScannerSessionId(newSessionId);
+                    initScannerWebSocket(newSessionId);
+                  }}
+                  className="px-3 md:px-4 py-2 md:py-2.5 bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-700 rounded-md transition-colors text-xs md:text-sm flex items-center gap-1 md:gap-2"
+                >
+                  <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Reiniciar
+                </button>
+                <button
+                  onClick={() => setShowScannerModal(false)}
+                  className="px-3 md:px-4 py-2 md:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors shadow-sm hover:shadow text-xs md:text-sm"
+                >
+                  Cerrar
                 </button>
               </div>
             </div>

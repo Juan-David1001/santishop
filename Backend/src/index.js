@@ -26,7 +26,8 @@ const PORT = config.port;
 app.use(cors({
   origin: '*', // Permite conexiones desde cualquier origen
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Upgrade', 'Connection'],
+  credentials: true
 }));
 app.use(express.json());
 
@@ -49,9 +50,20 @@ app.use('/api/health-check', healthRoutes);
 // Middleware de manejo de errores
 app.use(errorHandler);
 
-// Iniciar el servidor
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+// Crear un servidor HTTP para Express y WebSocket
+const http = require('http');
+const server = http.createServer(app);
+
+// Configurar WebSocket en el mismo servidor
+const WebSocket = require('ws');
+const setupWebSocketServer = require('../websocket-setup');
+
+// Iniciar el servidor en el puerto configurado
+server.listen(PORT, () => {
+  console.log(`Servidor HTTP y WebSocket corriendo en el puerto ${PORT}`);
+  
+  // Inicializar el servidor WebSocket con el servidor HTTP
+  setupWebSocketServer(server);
 });
 
 // Manejar cierre controlado
@@ -59,5 +71,8 @@ process.on('SIGINT', async () => {
   const prisma = require('./config/db');
   await prisma.$disconnect();
   console.log('Conexión con la base de datos cerrada');
-  process.exit(0);
+  server.close(() => {
+    console.log('Servidor HTTP y WebSocket cerrados');
+    process.exit(0);
+  });
 });
