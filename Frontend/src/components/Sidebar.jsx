@@ -8,27 +8,17 @@ import {
   RiFileList3Line, RiMenuLine, RiCloseLine, RiArrowRightSLine
 } from 'react-icons/ri';
 
-function Sidebar() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+// Recibimos isOpen, toggleSidebar, isMobile e isHovered como props desde el Layout
+function Sidebar({ isOpen, toggleSidebar, isMobile, isHovered }) {
   const [activeShifts, setActiveShifts] = useState([]);
   const [currentShift, setCurrentShift] = useState(null);
   const location = useLocation();
+  
+  // Modo compacto cuando no está en hover en desktop
+  const isCompact = !isMobile && !isHovered;
 
-  // Detectar si es dispositivo móvil y cargar información de turnos
+  // Cargar información de turnos
   useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-      if (window.innerWidth >= 1024) {
-        setIsOpen(true);
-      } else {
-        setIsOpen(false);
-      }
-    };
-    
-    checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
-    
     // Cargar turnos activos
     loadActiveShifts();
     
@@ -36,7 +26,6 @@ function Sidebar() {
     const intervalId = setInterval(loadActiveShifts, 60000);
     
     return () => {
-      window.removeEventListener('resize', checkIfMobile);
       clearInterval(intervalId);
     };
   }, []);
@@ -76,14 +65,10 @@ function Sidebar() {
       : "text-gray-300 hover:bg-slate-800/40 hover:text-gray-100 border-l-4 border-transparent";
   };
 
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
-  };
-
-  // Controlar clic en el overlay para cerrar modal en móviles
-  const handleOverlayClick = () => {
+  // Controlar clic en enlaces para cerrar sidebar en móvil
+  const handleLinkClick = () => {
     if (isMobile) {
-      setIsOpen(false);
+      toggleSidebar();
     }
   };
 
@@ -102,16 +87,24 @@ function Sidebar() {
         <div className="w-10"></div> {/* Spacer for balance */}
       </div>
 
-      {/* Overlay for mobile */}
-      {isOpen && isMobile && (
-        <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-20" onClick={handleOverlayClick}></div>
-      )}
-
       {/* Sidebar */}
-      <aside className={`${isOpen ? 'translate-x-0' : '-translate-x-full'} fixed top-0 left-0 h-full w-64 sm:w-72 bg-slate-900 text-white shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 z-30 flex flex-col overflow-hidden`}>
-        <div className="flex flex-col p-4 sm:p-5 border-b border-slate-800/80 bg-slate-800/30">
+      <aside className={`
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
+        fixed top-0 left-0 h-full 
+        ${isCompact ? 'w-20' : 'w-64 sm:w-72'} 
+        bg-slate-900 text-white shadow-xl 
+        transition-all duration-300 ease-in-out 
+        lg:translate-x-0 z-30 flex flex-col overflow-hidden
+      `}>
+        <div className={`flex flex-col ${isCompact ? 'p-2' : 'p-4 sm:p-5'} border-b border-slate-800/80 bg-slate-800/30`}>
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-white">Sistema de Ventas</h1>
+            {!isCompact ? (
+              <h1 className="text-xl sm:text-2xl font-bold text-white">Sistema de Ventas</h1>
+            ) : (
+              <div className="w-full flex justify-center">
+                <RiStore3Line className="w-8 h-8 text-indigo-400" />
+              </div>
+            )}
             {isMobile && (
               <button 
                 onClick={toggleSidebar} 
@@ -124,213 +117,276 @@ function Sidebar() {
           </div>
           
           {/* Quick status indicator */}
-          <Link 
-            to="/shifts" 
-            className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${
-              currentShift ? 'bg-emerald-500/10 hover:bg-emerald-500/15' : 'bg-red-500/10 hover:bg-red-500/15'
-            }`}
-          >
-            <div className="flex items-center space-x-2">
-              <div className={`h-2.5 w-2.5 rounded-full ${currentShift ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`}></div>
-              <span className="text-sm font-medium">
-                {currentShift ? 'Turno activo' : 'Sin turno activo'}
+          {isCompact ? (
+            <Link 
+              to="/shifts" 
+              className={`flex items-center justify-center p-2 rounded-lg transition-colors ${
+                currentShift ? 'bg-emerald-500/10 hover:bg-emerald-500/15' : 'bg-red-500/10 hover:bg-red-500/15'
+              }`}
+            >
+              <div className={`h-3 w-3 rounded-full ${currentShift ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`}></div>
+            </Link>
+          ) : (
+            <Link 
+              to="/shifts" 
+              className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${
+                currentShift ? 'bg-emerald-500/10 hover:bg-emerald-500/15' : 'bg-red-500/10 hover:bg-red-500/15'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <div className={`h-2.5 w-2.5 rounded-full ${currentShift ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`}></div>
+                <span className="text-sm font-medium">
+                  {currentShift ? 'Turno activo' : 'Sin turno activo'}
+                </span>
+              </div>
+              <span className="text-xs font-medium flex items-center gap-1 bg-slate-800/70 px-2 py-1 rounded-md">
+                Ver <RiArrowRightSLine className="text-sm" />
               </span>
-            </div>
-            <span className="text-xs font-medium flex items-center gap-1 bg-slate-800/70 px-2 py-1 rounded-md">
-              Ver <RiArrowRightSLine className="text-sm" />
-            </span>
-          </Link>
+            </Link>
+          )}
         </div>
         
         <div className="overflow-y-auto flex-1 bg-gradient-to-b from-slate-900 to-slate-950 sidebar-scrollbar">
-          <nav className="p-4 space-y-1.5">
+          <nav className={`${isCompact ? 'p-2' : 'p-4'} space-y-1.5`}>
             <Link 
               to="/" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/')}`}
+              onClick={handleLinkClick}
+              title="Dashboard"
             >
-              <RiDashboardLine className="w-5 h-5 mr-4" />
-              <span className="font-medium">Dashboard</span>
+              <RiDashboardLine className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Dashboard</span>}
             </Link>
             
             <Link 
               to="/pos" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/pos')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/pos')}`}
+              onClick={handleLinkClick}
+              title="Punto de Venta"
             >
-              <RiStore3Line className="w-5 h-5 mr-4" />
-              <span className="font-medium">Punto de Venta</span>
+              <RiStore3Line className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Punto de Venta</span>}
             </Link>
             
             <Link 
               to="/sales" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/sales')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/sales')}`}
+              onClick={handleLinkClick}
+              title="Historial Ventas"
             >
-              <RiHistoryLine className="w-5 h-5 mr-4" />
-              <span className="font-medium">Historial Ventas</span>
+              <RiHistoryLine className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Historial Ventas</span>}
             </Link>
             
             <div className="my-4 border-t border-slate-700/30"></div>
             
-            <div className="px-4 py-2">
-              <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Inventario</h3>
-            </div>
+            {isCompact ? (
+              <div className="flex justify-center py-2">
+                <div className="h-1 w-8 bg-slate-700 rounded"></div>
+              </div>
+            ) : (
+              <div className="px-4 py-2">
+                <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Inventario</h3>
+              </div>
+            )}
             
             <Link 
               to="/inventory" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/inventory')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/inventory')}`}
+              onClick={handleLinkClick}
+              title="Productos"
             >
-              <RiArchiveLine className="w-5 h-5 mr-4" />
-              <span className="font-medium">Productos</span>
+              <RiArchiveLine className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Productos</span>}
             </Link>
             
             <Link 
               to="/categories" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/categories')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/categories')}`}
+              onClick={handleLinkClick}
+              title="Categorías"
             >
-              <RiPriceTag3Line className="w-5 h-5 mr-4" />
-              <span className="font-medium">Categorías</span>
+              <RiPriceTag3Line className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Categorías</span>}
             </Link>
             
             <Link 
               to="/inventory-reports" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/inventory-reports')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/inventory-reports')}`}
+              onClick={handleLinkClick}
+              title="Reportes"
             >
-              <RiBarChartBoxLine className="w-5 h-5 mr-4" />
-              <span className="font-medium">Reportes</span>
+              <RiBarChartBoxLine className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Reportes</span>}
             </Link>
             
             <div className="my-4 border-t border-slate-700/30"></div>
             
-            <div className="px-4 py-2">
-              <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Clientes</h3>
-            </div>
+            {isCompact ? (
+              <div className="flex justify-center py-2">
+                <div className="h-1 w-8 bg-slate-700 rounded"></div>
+              </div>
+            ) : (
+              <div className="px-4 py-2">
+                <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Clientes</h3>
+              </div>
+            )}
             
             <Link 
               to="/clients" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/clients')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/clients')}`}
+              onClick={handleLinkClick}
+              title="Clientes"
             >
-              <RiTeamLine className="w-5 h-5 mr-4" />
-              <span className="font-medium">Clientes</span>
+              <RiTeamLine className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Clientes</span>}
             </Link>
             
             <div className="my-4 border-t border-slate-700/30"></div>
             
-            <div className="px-4 py-2">
-              <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Proveedores</h3>
-            </div>
+            {isCompact ? (
+              <div className="flex justify-center py-2">
+                <div className="h-1 w-8 bg-slate-700 rounded"></div>
+              </div>
+            ) : (
+              <div className="px-4 py-2">
+                <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Proveedores</h3>
+              </div>
+            )}
             
             <Link 
               to="/suppliers" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/suppliers')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/suppliers')}`}
+              onClick={handleLinkClick}
+              title="Proveedores"
             >
-              <RiBuildingLine className="w-5 h-5 mr-4" />
-              <span className="font-medium">Proveedores</span>
+              <RiBuildingLine className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Proveedores</span>}
             </Link>
             
             <Link 
               to="/purchases" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/purchases')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/purchases')}`}
+              onClick={handleLinkClick}
+              title="Compras"
             >
-              <RiShoppingBag3Line className="w-5 h-5 mr-4" />
-              <span className="font-medium">Compras</span>
+              <RiShoppingBag3Line className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Compras</span>}
             </Link>
             
             <Link 
               to="/supplier-payments" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/supplier-payments')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/supplier-payments')}`}
+              onClick={handleLinkClick}
+              title="Pagos a Proveedores"
             >
-              <RiMoneyDollarBoxLine className="w-5 h-5 mr-4" />
-              <span className="font-medium">Pagos a Proveedores</span>
+              <RiMoneyDollarBoxLine className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Pagos a Proveedores</span>}
             </Link>
             
             <div className="my-4 border-t border-slate-700/30"></div>
             
-            <div className="px-4 py-2">
-              <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Reportes</h3>
-            </div>
+            {isCompact ? (
+              <div className="flex justify-center py-2">
+                <div className="h-1 w-8 bg-slate-700 rounded"></div>
+              </div>
+            ) : (
+              <div className="px-4 py-2">
+                <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Reportes</h3>
+              </div>
+            )}
 
             <Link 
               to="/reports" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/reports')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/reports')}`}
+              onClick={handleLinkClick}
+              title="Reportes Avanzados"
             >
-              <RiFileChartLine className="w-5 h-5 mr-4" />
-              <span className="font-medium">Reportes Avanzados</span>
+              <RiFileChartLine className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Reportes Avanzados</span>}
             </Link>
 
             <div className="my-4 border-t border-slate-700/30"></div>
             
-            <div className="px-4 py-2">
-              <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Administración</h3>
-            </div>
+            {isCompact ? (
+              <div className="flex justify-center py-2">
+                <div className="h-1 w-8 bg-slate-700 rounded"></div>
+              </div>
+            ) : (
+              <div className="px-4 py-2">
+                <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Administración</h3>
+              </div>
+            )}
             
             <Link 
               to="/users" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/users')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/users')}`}
+              onClick={handleLinkClick}
+              title="Usuarios"
             >
-              <RiUserSettingsLine className="w-5 h-5 mr-4" />
-              <span className="font-medium">Usuarios</span>
+              <RiUserSettingsLine className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Usuarios</span>}
             </Link>
             
             <Link 
               to="/shifts" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/shifts')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/shifts')}`}
+              onClick={handleLinkClick}
+              title="Turnos"
             >
-              <RiTimeLine className="w-5 h-5 mr-4" />
-              <span className="font-medium">Turnos</span>
+              <RiTimeLine className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Turnos</span>}
             </Link>
             
             <Link 
               to="/shift-closures" 
-              className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/shift-closures')}`}
-              onClick={() => isMobile && setIsOpen(false)}
+              className={`flex items-center ${isCompact ? 'justify-center py-3 px-2' : 'px-4 py-3'} rounded-md transition-colors ${isActive('/shift-closures')}`}
+              onClick={handleLinkClick}
+              title="Cierres de Caja"
             >
-              <RiFileList3Line className="w-5 h-5 mr-4" />
-              <span className="font-medium">Cierres de Caja</span>
+              <RiFileList3Line className={`w-5 h-5 ${isCompact ? '' : 'mr-4'}`} />
+              {!isCompact && <span className="font-medium">Cierres de Caja</span>}
             </Link>
           </nav>
         </div>
         
-        <div className="p-4 border-t border-slate-800/70 bg-slate-800/20">
+        <div className={`${isCompact ? 'p-2' : 'p-4'} border-t border-slate-800/70 bg-slate-800/20`}>
           {/* Indicador de turno activo */}
-          {currentShift ? (
-            <div className="mb-0 bg-emerald-500/10 rounded-lg p-3 text-sm border border-emerald-500/20 shadow-sm">
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                <p className="font-medium text-emerald-300">Turno Activo</p>
-              </div>
-              <p className="text-white">
-                {currentShift.user ? (
-                  <>Usuario: <span className="font-medium">{currentShift.user.name}</span></>
-                ) : (
-                  'Usuario: No especificado'
-                )}
-              </p>
-              <p className="text-slate-400 text-xs mt-1">ID: {currentShift.id}</p>
+          {isCompact ? (
+            // Versión compacta del indicador de turno
+            <div className={`flex justify-center items-center p-2 rounded-full ${currentShift ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
+              <span className={`h-3 w-3 rounded-full ${currentShift ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`}></span>
             </div>
           ) : (
-            <div className="mb-0 bg-red-500/10 rounded-lg p-3 text-sm border border-red-500/20 shadow-sm">
-              <div className="flex items-center space-x-2">
-                <span className="h-2 w-2 bg-red-500 rounded-full"></span>
-                <p className="font-medium text-red-300">No hay turno activo</p>
+            // Versión completa del indicador de turno
+            currentShift ? (
+              <div className="mb-0 bg-emerald-500/10 rounded-lg p-3 text-sm border border-emerald-500/20 shadow-sm">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                  <p className="font-medium text-emerald-300">Turno Activo</p>
+                </div>
+                <p className="text-white">
+                  {currentShift.user ? (
+                    <>Usuario: <span className="font-medium">{currentShift.user.name}</span></>
+                  ) : (
+                    'Usuario: No especificado'
+                  )}
+                </p>
+                <p className="text-slate-400 text-xs mt-1">ID: {currentShift.id}</p>
               </div>
-              <p className="text-gray-300 text-xs mt-1">
-                <Link to="/shifts" className="text-indigo-300 hover:text-indigo-200 transition-colors">
-                  Ir a gestión de turnos →
-                </Link>
-              </p>
-            </div>
+            ) : (
+              <div className="mb-0 bg-red-500/10 rounded-lg p-3 text-sm border border-red-500/20 shadow-sm">
+                <div className="flex items-center space-x-2">
+                  <span className="h-2 w-2 bg-red-500 rounded-full"></span>
+                  <p className="font-medium text-red-300">No hay turno activo</p>
+                </div>
+                <p className="text-gray-300 text-xs mt-1">
+                  <Link to="/shifts" className="text-indigo-300 hover:text-indigo-200 transition-colors">
+                    Ir a gestión de turnos →
+                  </Link>
+                </p>
+              </div>
+            )
           )}
         </div>
       </aside>
