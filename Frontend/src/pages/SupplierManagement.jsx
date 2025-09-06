@@ -166,6 +166,7 @@ const SupplierManagement = () => {
       description: `Pago a ${supplier.name}`,
       purchaseId: ''
     });
+    checkActiveShift();
     setIsPaymentModalOpen(true);
   };
 
@@ -177,6 +178,36 @@ const SupplierManagement = () => {
     });
   };
 
+  // Verificar si hay un turno activo
+  const [activeShift, setActiveShift] = useState(null);
+  
+  // Cargar turno activo al inicio
+  useEffect(() => {
+    checkActiveShift();
+  }, []);
+  
+  // Mostrar advertencia cuando se abre el modal y no hay turno activo
+  useEffect(() => {
+    if (isPaymentModalOpen && !activeShift) {
+      toast.warning('No hay un turno activo. Debe iniciar un turno para registrar pagos.');
+    }
+  }, [isPaymentModalOpen, activeShift]);
+  
+  // Función para verificar si hay un turno activo
+  const checkActiveShift = async () => {
+    try {
+      const response = await axios.get('/api/shifts/active');
+      if (response.data && response.data.length > 0) {
+        setActiveShift(response.data[0]);
+      } else {
+        setActiveShift(null);
+      }
+    } catch (error) {
+      console.error('Error al verificar turno activo:', error);
+      setActiveShift(null);
+    }
+  };
+
   const submitPayment = async (e) => {
     e.preventDefault();
     
@@ -185,14 +216,33 @@ const SupplierManagement = () => {
       return;
     }
     
+    // Verificar si hay un turno activo antes de procesar el pago
+    if (!activeShift) {
+      toast.error('No hay un turno activo. Debe iniciar un turno antes de registrar pagos.');
+      return;
+    }
+    
     try {
-      await axios.post('/api/purchases/payment', {
-        supplierId: detailsSupplier.id,
-        amount: parseFloat(paymentData.amount),
-        userId: 1, // Temporal: se debería obtener del usuario logueado
-        purchaseId: paymentData.purchaseId || null,
-        description: paymentData.description
-      });
+      // Si hay un purchaseId específico, usar la ruta de pagos asociada a esa compra
+      // De lo contrario, usar la ruta general de pagos a proveedores
+      if (paymentData.purchaseId) {
+        await axios.post(`/api/purchases/${paymentData.purchaseId}/payments`, {
+          supplierId: detailsSupplier.id,
+          amount: parseFloat(paymentData.amount),
+          userId: activeShift.userId, // Usar el userId del turno activo
+          shiftId: activeShift.id, // Enviar el ID del turno activo
+          description: paymentData.description
+        });
+      } else {
+        await axios.post('/api/supplier-payments', {
+          supplierId: detailsSupplier.id,
+          amount: parseFloat(paymentData.amount),
+          userId: activeShift.userId, // Usar el userId del turno activo
+          shiftId: activeShift.id, // Enviar el ID del turno activo
+          purchaseId: null,
+          description: paymentData.description
+        });
+      }
       
       toast.success('Pago registrado correctamente');
       setIsPaymentModalOpen(false);
@@ -205,7 +255,14 @@ const SupplierManagement = () => {
       loadSuppliers(); // Recargar la lista para actualizar el saldo
     } catch (error) {
       console.error('Error registering payment:', error);
-      toast.error(error.response?.data?.error || 'Error al registrar el pago');
+      // Mostrar mensaje específico para errores comunes
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else if (error.message.includes('Network Error')) {
+        toast.error('Error de conexión. Verifica tu conexión a la red o que el servidor esté en línea.');
+      } else {
+        toast.error('Error al registrar el pago');
+      }
     }
   };
 
@@ -927,6 +984,37 @@ const SupplierManagement = () => {
             </div>
             
             <div className="p-6">
+              {!activeShift ? (
+                <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+                  <div className="flex items-center text-red-700 font-medium mb-2">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    No hay turno activo
+                  </div>
+                  <p className="text-sm text-red-600">
+                    Debes iniciar un turno antes de registrar pagos a proveedores. Dirígete a la sección de turnos para iniciar uno.
+                  </p>
+                  <div className="mt-3">
+                    <a 
+                      href="/shifts" 
+                      className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none"
+                    >
+                      Ir a gestión de turnos
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded-lg">
+                  <div className="flex items-center text-green-700 font-medium">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Turno activo: {activeShift.user?.name || 'Usuario'}
+                  </div>
+                </div>
+              )}
+              
               <form onSubmit={submitPayment} className="space-y-4">
                 <div className="card-neomorphic p-3 bg-purple-50">
                   <p className="font-medium text-purple-700">{detailsSupplier.name}</p>
@@ -1037,7 +1125,9 @@ const SupplierManagement = () => {
                   </button>
                   <button
                     type="submit"
-                    className="btn-primary flex items-center"
+                    className={`btn-primary flex items-center ${!activeShift ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={!activeShift}
+                    title={!activeShift ? 'Debe haber un turno activo para registrar pagos' : ''}
                   >
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
